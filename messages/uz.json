@@ -1,0 +1,12 @@
+{
+    "Header": {
+        "home": "Asosiy",
+        "catalog": "Katalog",
+        "cart": "Savatcha"
+    },
+    "Hero": {
+        "title": "LEVITA",
+        "subtitle": "Quyosh energiyasi va havoda muallaq turuvchi ifor.",
+        "cta": "Kashf etish"
+    }
+}
