@@ -6,6 +6,20 @@ import "../globals.css";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import Header from "@/components/shared/Header";
 
+// TypeScript uchun Telegram WebApp global obyektini e'lon qilish
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        sendData: (data: string) => void;
+      };
+    };
+  }
+}
+
 const montserrat = Montserrat({ 
   subsets: ["latin"], 
   variable: "--font-montserrat",
@@ -37,16 +51,18 @@ export default async function RootLayout({
   
   return (
     <html lang={locale} className={`${montserrat.variable} ${inter.variable} dark`}>
+    <head>
+    {/* Telegram WebApp rasmiy SDK skripti */}
+    <script src="https://telegram.org/js/telegram-web-app.js" async></script>
+    </head>
     <body className="font-sans antialiased text-foreground bg-background flex flex-col min-h-screen">
     <NextIntlClientProvider messages={messages}>
-    
     <SmoothScroll>
     <Header />
     <div className="pt-20 flex-1 flex flex-col">
     {children}
     </div>
     </SmoothScroll>
-    
     </NextIntlClientProvider>
     </body>
     </html>

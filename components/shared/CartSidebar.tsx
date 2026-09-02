@@ -4,20 +4,43 @@ import { useCartStore } from "@/store/useCartStore";
 import { X, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { useEffect, useState } from "react"; // <--- Qo'shamiz
+import { useEffect, useState } from "react";
 
 export default function CartSidebar() {
     const { isOpen, setIsOpen, items, removeItem, updateQuantity, getTotal } = useCartStore();
     const locale = useLocale();
     
-    // MUHIM HIMOYA
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         setMounted(true);
     }, []);
     
-    // Agar sahifa hali yuklanmagan bo'lsa, savatchani yashirib turamiz
-    if (!mounted) return null; 
+    if (!mounted) return null;
+    
+    // Telegram WebApp orqali buyurtmani botga yuborish
+    const handleCheckout = (e: React.MouseEvent) => {
+        const tg = typeof window !== "undefined" ? window.Telegram?.WebApp : undefined;
+        
+        // Agar foydalanuvchi Telegram WebApp ichida bo'lsa
+        if (tg && tg.sendData) {
+            e.preventDefault(); // /checkout sahifasiga o'tib ketishni to'xtatamiz
+            
+            const orderData = {
+                items: items.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+                total: getTotal(),
+            };
+            
+            tg.sendData(JSON.stringify(orderData)); // Botga JSON yuboriladi
+            tg.close(); // WebApp oynasi yopiladi
+            setIsOpen(false);
+        }
+        // Agar oddiy veb-brauzerda bo'lsa, Link avtomatik /checkout sahifasiga olib o'tadi
+    };
     
     return (
         <>
@@ -72,7 +95,7 @@ export default function CartSidebar() {
             <span className="text-muted-foreground">Jami:</span>
             <span className="font-heading text-xl">${getTotal().toFixed(2)}</span>
             </div>
-            <Link href={`/${locale}/checkout`} onClick={() => setIsOpen(false)}>
+            <Link href={`/${locale}/checkout`} onClick={handleCheckout}>
             <button className="w-full py-4 bg-primary text-background font-medium tracking-widest uppercase rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all">
             Buyurtma berish
             </button>
