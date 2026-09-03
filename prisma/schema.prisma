@@ -1,0 +1,29 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  title       String
+  price       Float
+  image       String
+  category    String   // 'new_phones', 'used_phones', 'accessories'
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id           String   @id @default(cuid())
+  customerName String
+  phone        String
+  telegramId   String?
+  items        Json     // Savatchadagi mahsulotlar (JSON formatda)
+  totalPrice   Float
+  status       String   @default("NEW") // NEW, CONFIRMED, COMPLETED, CANCELLED
+  createdAt    DateTime @default(now())
+}

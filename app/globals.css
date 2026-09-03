@@ -4,6 +4,7 @@
 @theme {
   --font-sans: var(--font-inter), sans-serif;
   --font-heading: var(--font-montserrat), sans-serif;
+  --font-script: var(--font-caveat), cursive;
   
   /* Tailwind v4 uchun ranglar va o'zgaruvchilarni bog'lash */
   --color-background: var(--background);
@@ -25,7 +26,7 @@
   --color-muted-foreground: var(--muted-foreground);
   
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-foreground: var(--color-accent-foreground);
   
   --color-border: var(--border);
   --color-input: var(--input);
@@ -36,41 +37,40 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* NAQTOL PREMIUM DARK MODE */
+/* NAQTOL PREMIUM LUXURY GREEN DARK MODE */
 :root, .dark {
-  --background: #050505;
+  --background: #05130f;       /* Rasmdagi to'q zaytun/yashil fon */
   --foreground: #EAEAEA;
   
-  --card: #0A0C10; 
+  --card: #0f2a20;             /* Kartochkalar uchun ochroq yashil fon */
   --card-foreground: #EAEAEA;
   
-  --popover: #050505;
+  --popover: #05130f;
   --popover-foreground: #EAEAEA;
   
-  --primary: #06b6d4; 
+  --primary: #ccff00;          /* Neon Lime (Yorqin yashil tugma rangi) */
   --primary-foreground: #000000; 
   
-  --secondary: #1F2328;
+  --secondary: #173d2f;
   --secondary-foreground: #EAEAEA;
   
-  --muted: #14171A;
-  --muted-foreground: #9ca3af;
+  --muted: #0d221a;
+  --muted-foreground: #a0b3a9;
   
-  --accent: #1F2328;
+  --accent: #173d2f;
   --accent-foreground: #FFFFFF;
   
-  --border: #1F2328;
-  --input: #1F2328;
-  --ring: #06b6d4;
+  --border: #173d2f;
+  --input: #173d2f;
+  --ring: #ccff00;
   
   --radius: 0.75rem;
 }
 
 @layer base {
   html {
-    /* scroll-behavior olib tashlandi — skrol endi tez va chaqqon ishlaydi */
-    scrollbar-width: none;       /* Firefox uchun scrollbar'ni yashirish */
-    -ms-overflow-style: none;      /* Edge/IE uchun yashirish */
+    scrollbar-width: none;     /* Firefox uchun scrollbar'ni yashirish */
+    -ms-overflow-style: none;     /* Edge/IE uchun yashirish */
   }
   
   /* Chrome, Safari, Opera uchun scrollbar'ni butunlay yashirish */
@@ -85,8 +85,16 @@
   
   body {
     background-color: var(--background);
+    /* Rasmdagi kabi yuqori qismdan taraluvchi hashamatli yorug'lik effekti */
+    background-image: radial-gradient(circle at 50% -20%, #173d2f 0%, #05130f 60%);
+    background-attachment: fixed;
     color: var(--foreground);
     font-family: var(--font-sans);
     overflow-x: hidden;
   }
+}
+
+/* Shisha effekti (Glassmorphism) — Keyingi qadamdagi kategoriyalar uchun */
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
 }

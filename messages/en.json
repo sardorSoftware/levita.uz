@@ -3,21 +3,43 @@
         "home": "Home",
         "catalog": "Catalog",
         "cart": "Cart",
-        "new_phones": "New Smartphones",
-        "used_phones": "Used Phones",
+        "new_phones": "New smartphones",
+        "used_phones": "Used phones",
         "accessories": "Accessories"
     },
     "Hero": {
         "title": "NAQTOL",
-        "subtitle": "Store for modern smartphones, affordable used phones, and original accessories.",
-        "cta": "Explore Catalog"
+        "subtitle": "The latest smartphones, affordable used phones, and original accessories.",
+        "cta": "Go to Catalog"
+    },
+    "Categories": {
+        "shop_by_category": "Shop by Category",
+        "view_all": "View All",
+        "new_phones": "New smartphones",
+        "used_phones": "Used phones",
+        "accessories": "Accessories",
+        "shop_now": "Shop Now"
+    },
+    "Promo": {
+        "featured_product": "Season Hit",
+        "description": "Next-generation wireless earbuds. Featuring perfect sound, long battery life, and active noise cancellation.",
+        "buy_now": "Buy Now"
     },
     "Catalog": {
         "title": "Catalog",
-        "all": "All Products",
-        "new": "New Smartphones",
-        "used": "Used Phones",
+        "all": "All",
+        "new": "New smartphones",
+        "used": "Used phones",
         "accessories": "Accessories",
-        "add_to_cart": "Add to Cart"
+        "add_to_cart": "Add to cart"
+    },
+    "Footer": {
+        "description": "Latest smartphones and original accessories.",
+        "contact": "Contact",
+        "socials": "Social Networks",
+        "all_rights": "All rights reserved.",
+        "new_phones": "New smartphones",
+        "used_phones": "Used phones",
+        "accessories": "Accessories"
     }
 }

@@ -3,12 +3,15 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import HeroSlider from "@/components/shared/HeroSlider";
+import Categories from "@/components/shared/Categories";
+import PromoBanner from "@/components/shared/PromoBanner";
 import ProductCard from "@/components/shared/ProductCard";
 import CartSidebar from "@/components/shared/CartSidebar";
 import Footer from "@/components/shared/Footer";
 import { animateRevealUp } from "@/lib/animations";
 import { Smartphone, RefreshCw, Headphones } from "lucide-react";
 
+// Vaqtinchalik Ma'lumotlar (Baza ulanguncha)
 const NEW_PHONES = [
   { id: "1", name: "iPhone 15 Pro Max 256GB", price: 1180, image: "/products/smartphone.png", badge: "Yangi" },
   { id: "2", name: "Samsung Galaxy S24 Ultra 512GB", price: 1090, image: "/products/smartphone.png", badge: "Yangi" },
@@ -43,23 +46,32 @@ export default function Home() {
   
   return (
     <>
-    <main className="flex flex-col min-h-screen bg-[#050505] text-white" ref={sectionRef}>
-    {/* HERO BANNER */}
+    {/* Background rangi endi globals.css dan olinadi, shuning uchun bu yerdan bg-[#050505] olib tashlandi */}
+    <main className="flex flex-col min-h-screen text-white relative" ref={sectionRef}>
+    
+    {/* 1. HERO BANNER */}
     <HeroSlider />
     
-    {/* KATALOG UMUMIY SARлавHA */}
-    <div className="container mx-auto px-4 md:px-6 pt-24 pb-12 text-center">
-    <h2 className="font-heading text-3xl md:text-5xl font-light tracking-widest uppercase">
+    {/* 2. KATEGORIYALAR (Glassmorphism grid) */}
+    <Categories />
+    
+    {/* 3. PROMO BANNER (Katta reklama bloki) */}
+    <PromoBanner />
+    
+    {/* KATALOG UMUMIY SARLAVHA */}
+    <div id="catalog" className="max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-8 text-center scroll-mt-28">
+    <h2 className="font-heading text-3xl md:text-5xl font-extrabold tracking-wider uppercase text-white">
     {t("title") || "Katalog"}
     </h2>
-    <div className="w-12 h-[2px] bg-cyan-400 mx-auto mt-4 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+    {/* Neon chiziq */}
+    <div className="w-16 h-[3px] bg-[#ccff00] mx-auto mt-4 shadow-[0_0_15px_rgba(204,255,0,0.6)] rounded-full" />
     </div>
     
-    {/* 1. YANGI SMARTFONLAR BO'LIMI */}
-    <section id="new-phones" className="container mx-auto px-4 md:px-6 py-12 scroll-mt-28">
+    {/* 4. YANGI SMARTFONLAR BO'LIMI */}
+    <section id="new-phones" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-    <Smartphone className="text-cyan-400" size={24} />
-    <h3 className="font-heading text-xl md:text-2xl font-semibold tracking-wider uppercase text-white">
+    <Smartphone className="text-[#ccff00]" size={28} />
+    <h3 className="font-heading text-2xl font-bold tracking-wide text-white">
     {t("new") || "Yangi smartfonlar"}
     </h3>
     </div>
@@ -72,11 +84,11 @@ export default function Home() {
     </div>
     </section>
     
-    {/* 2. ISHLATILGAN TELEFONLAR BO'LIMI */}
-    <section id="used-phones" className="container mx-auto px-4 md:px-6 py-12 scroll-mt-28">
+    {/* 5. ISHLATILGAN TELEFONLAR BO'LIMI */}
+    <section id="used-phones" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-    <RefreshCw className="text-indigo-400" size={24} />
-    <h3 className="font-heading text-xl md:text-2xl font-semibold tracking-wider uppercase text-white">
+    <RefreshCw className="text-[#ccff00]" size={28} />
+    <h3 className="font-heading text-2xl font-bold tracking-wide text-white">
     {t("used") || "Ishlatilgan telefonlar (B/U)"}
     </h3>
     </div>
@@ -89,11 +101,11 @@ export default function Home() {
     </div>
     </section>
     
-    {/* 3. AKSESUARLAR BO'LIMI */}
-    <section id="accessories" className="container mx-auto px-4 md:px-6 py-12 pb-24 scroll-mt-28">
+    {/* 6. AKSESUARLAR BO'LIMI */}
+    <section id="accessories" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 pb-24 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-    <Headphones className="text-purple-400" size={24} />
-    <h3 className="font-heading text-xl md:text-2xl font-semibold tracking-wider uppercase text-white">
+    <Headphones className="text-[#ccff00]" size={28} />
+    <h3 className="font-heading text-2xl font-bold tracking-wide text-white">
     {t("accessories") || "Aksesuarlar"}
     </h3>
     </div>

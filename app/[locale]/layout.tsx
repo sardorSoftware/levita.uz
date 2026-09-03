@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat, Inter } from "next/font/google";
+import { Montserrat, Inter, Caveat } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import "../globals.css";
@@ -31,6 +31,13 @@ const inter = Inter({
   weight: ["300", "400", "500", "600"]
 });
 
+// Rasmdagi kabi aksent yozuvlar uchun qo'lyozma shrift
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
+  weight: ["400", "700"]
+});
+
 export const metadata: Metadata = {
   title: "NAQTOL - Smartfonlar va Aksesuarlar",
   description: "Eng so'nggi rusumdagi yangi hamda hamyonbop ishlatilgan (B/U) smartfonlar, original aksesuarlar do'koni.",
@@ -47,11 +54,11 @@ export default async function RootLayout({
   const messages = await getMessages();
   
   return (
-    <html lang={locale} className={`${montserrat.variable} ${inter.variable} dark`}>
+    <html lang={locale} className={`${montserrat.variable} ${inter.variable} ${caveat.variable} dark`}>
     <head>
     <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     </head>
-    <body className="font-sans antialiased text-white bg-[#050505] flex flex-col min-h-screen selection:bg-cyan-500 selection:text-black">
+    <body className="font-sans antialiased text-white bg-[#05130f] flex flex-col min-h-screen selection:bg-[#ccff00] selection:text-black">
     <NextIntlClientProvider messages={messages}>
     <SmoothScroll>
     <Header />

@@ -27,39 +27,42 @@ export default function ProductCard({ id, name, price, image, badge }: ProductCa
     
     return (
         <div 
-        className="group relative bg-[#0A0C10] border border-white/5 rounded-2xl p-6 transition-all duration-300 hover:border-cyan-500/40 hover:shadow-[0_10px_30px_rgba(6,182,212,0.1)] flex flex-col justify-between"
+        className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[28px] p-6 transition-all duration-300 hover:border-[#ccff00]/50 hover:shadow-[0_10px_30px_rgba(204,255,0,0.15)] flex flex-col justify-between overflow-hidden"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         >
+        {/* Orqa fondagi yorug'lik effekti (Hover paytida paydo bo'ladi) */}
+        <div className="absolute -inset-px bg-gradient-to-b from-[#ccff00]/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[28px] pointer-events-none" />
+        
         {/* Mahsulot belgisi (Badge: Yangi, B/U 89%, Top va hokazo) */}
         {badge && (
-            <span className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <span className="absolute top-5 left-5 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/30 shadow-[0_0_10px_rgba(204,255,0,0.2)]">
             {badge}
             </span>
         )}
         
-        <div className="h-48 w-full flex items-center justify-center mb-6 relative">
+        <div className="h-48 w-full flex items-center justify-center mb-6 relative z-10">
         <img 
         ref={imgRef}
         src={image} 
         alt={name} 
-        className="max-h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
+        className="max-h-full object-contain drop-shadow-[0_15px_20px_rgba(0,0,0,0.8)]"
         />
         </div>
         
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-end relative z-10">
         <div>
-        <h3 className="font-heading tracking-wide text-foreground text-base font-semibold group-hover:text-cyan-400 transition-colors">
+        <h3 className="font-heading tracking-wide text-white text-base font-semibold group-hover:text-[#ccff00] transition-colors line-clamp-1">
         {name}
         </h3>
-        <p className="text-cyan-400 font-bold mt-2 tracking-wider text-lg">
+        <p className="text-[#ccff00] font-bold mt-2 tracking-wider text-lg">
         ${price.toFixed(2)}
         </p>
         </div>
         
         <button 
         onClick={() => addItem({ id, name, price, image, quantity: 1 })}
-        className="p-3 bg-white/5 rounded-full hover:bg-cyan-500 hover:text-black transition-all border border-white/10 hover:border-cyan-400 group-hover:shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+        className="p-3 bg-white/5 rounded-full hover:bg-[#ccff00] hover:text-black transition-all border border-white/10 hover:border-[#ccff00] hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] text-white"
         aria-label="Add to cart"
         >
         <ShoppingBag size={18} strokeWidth={1.8} />

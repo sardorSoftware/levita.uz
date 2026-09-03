@@ -11,14 +11,22 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                background: "#050505", // OLED to'q qora fon
-                foreground: "#EAEAEA", // Asosiy oqish-kulrang matn
-                primary: "#06b6d4",    // Neon Cyan urg'u rangi (texnika uchun)
-                border: "#1F2328",     // Nozik kulrang chiziqlar
+                background: "#05130f",    // Rasmdagi to'q yashil/zaytun premium fon
+                surface: "#0f2a20",       // Kartalar va qismlar uchun ochroq yashil fon
+                foreground: "#EAEAEA",    // Asosiy oqish matn
+                primary: "#ccff00",       // Neon Lime (rasmdagi yorqin yashil tugma rangi)
+                border: "#173d2f",        // Nozik yashil-kulrang chegaralar
+                naqtol: {
+                    dark: "#05130f",
+                    light: "#0f2a20",
+                    neon: "#ccff00",
+                    text: "#a0b3a9",
+                }
             },
             fontFamily: {
-                montserrat: ['var(--font-montserrat)'], 
-                inter: ['var(--font-inter)'],           
+                montserrat: ['var(--font-montserrat)', 'sans-serif'],
+                script: ['var(--font-caveat)', 'cursive'], // "World" kabi yozuvlar uchun
+                inter: ['var(--font-inter)', 'sans-serif'],         
             },
         },
     },

@@ -1,56 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Phone, Send } from "lucide-react";
 
 export default function Footer() {
     const locale = useLocale();
+    const t = useTranslations("Footer");
     const currentYear = new Date().getFullYear();
     
     return (
-        <footer className="w-full bg-[#0A0C10] border-t border-white/5 pt-16 pb-8 mt-20 text-white">
-        <div className="container mx-auto px-6">
+        <footer className="w-full bg-[#05130f] border-t border-white/10 pt-16 pb-8 mt-20 text-white relative overflow-hidden">
+        {/* Orqa fon nur effekti */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[150px] bg-[#ccff00]/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         
         {/* Logo va Qisqa ma'lumot */}
         <div className="flex flex-col items-start">
         <Link 
         href={`/${locale}`} 
-        className="font-heading text-2xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 flex items-center gap-1.5"
+        className="font-heading text-2xl font-extrabold tracking-widest text-white flex items-center gap-2.5 group"
         >
-        NAQTOL <span className="w-2 h-2 rounded-full bg-cyan-400" />
+        <div className="w-8 h-8 rounded-xl bg-[#ccff00] flex items-center justify-center font-heading font-extrabold text-black text-lg shadow-[0_0_15px_rgba(204,255,0,0.4)] group-hover:scale-105 transition-transform">
+        N
+        </div>
+        <span>NAQTOL<span className="text-[#ccff00]">.</span></span>
         </Link>
-        <p className="text-muted-foreground text-sm tracking-wide mt-2">
-        Eng so&apos;nggi rusumdagi smartfonlar va original aksesuarlar.
+        <p className="text-white/60 text-sm tracking-wide mt-3 max-w-sm">
+        {t("description")}
         </p>
         </div>
         
         {/* Bog'lanish / Telefon */}
         <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-        Bog&apos;lanish
+        <span className="text-xs uppercase tracking-widest text-[#ccff00] font-semibold">
+        {t("contact")}
         </span>
         <a 
         href="tel:+998910144040" 
-        className="flex items-center gap-2 text-sm text-foreground hover:text-cyan-400 transition-colors"
+        className="flex items-center gap-2 text-sm text-white/80 hover:text-[#ccff00] transition-colors"
         >
-        <Phone size={16} className="text-cyan-400" />
+        <Phone size={16} className="text-[#ccff00]" />
         +998 (91) 014-40-40
         </a>
         </div>
         
         {/* Ijtimoiy tarmoqlar */}
         <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-        Ijtimoiy tarmoqlar
+        <span className="text-xs uppercase tracking-widest text-[#ccff00] font-semibold">
+        {t("socials")}
         </span>
         <div className="flex gap-4">
         <a 
         href="https://www.instagram.com/naqtol" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-cyan-400 transition-colors"
+        className="flex items-center gap-2 text-sm text-white/80 hover:text-[#ccff00] transition-colors"
         >
         <svg 
         xmlns="http://www.w3.org/2000/svg" 
@@ -62,7 +69,7 @@ export default function Footer() {
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round" 
-        className="text-cyan-400"
+        className="text-[#ccff00]"
         >
         <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -75,9 +82,9 @@ export default function Footer() {
         href="https://t.me/Mirbayev" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-cyan-400 transition-colors"
+        className="text-white/80 hover:text-[#ccff00] transition-colors flex items-center gap-2 text-sm"
         >
-        <Send size={16} className="text-cyan-400" />
+        <Send size={16} className="text-[#ccff00]" />
         Telegram
         </a>
         </div>
@@ -85,19 +92,19 @@ export default function Footer() {
         
         </div>
         
-        <div className="w-full h-[1px] bg-white/5 my-8" />
+        <div className="w-full h-[1px] bg-white/10 my-8" />
         
-        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground tracking-widest uppercase gap-4">
-        <p>&copy; {currentYear} NAQTOL. Barcha huquqlar himoyalangan.</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-white/50 tracking-widest uppercase gap-4">
+        <p>&copy; {currentYear} NAQTOL. {t("all_rights")}</p>
         <div className="flex gap-6">
-        <Link href={`/${locale}#new-phones`} className="hover:text-cyan-400 transition-colors">
-        Yangi smartfonlar
+        <Link href={`/${locale}#new-phones`} className="hover:text-[#ccff00] transition-colors">
+        {t("new_phones")}
         </Link>
-        <Link href={`/${locale}#used-phones`} className="hover:text-cyan-400 transition-colors">
-        B/U Telefonlar
+        <Link href={`/${locale}#used-phones`} className="hover:text-[#ccff00] transition-colors">
+        {t("used_phones")}
         </Link>
-        <Link href={`/${locale}#accessories`} className="hover:text-cyan-400 transition-colors">
-        Aksesuarlar
+        <Link href={`/${locale}#accessories`} className="hover:text-[#ccff00] transition-colors">
+        {t("accessories")}
         </Link>
         </div>
         </div>
