@@ -6,7 +6,6 @@ import "../globals.css";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import Header from "@/components/shared/Header";
 
-// TypeScript uchun Telegram WebApp global obyektini e'lon qilish
 declare global {
   interface Window {
     Telegram?: {
@@ -23,21 +22,20 @@ declare global {
 const montserrat = Montserrat({ 
   subsets: ["latin"], 
   variable: "--font-montserrat",
-  weight: ["300", "400", "500", "600", "700"]
+  weight: ["300", "400", "500", "600", "700", "800"]
 });
 
 const inter = Inter({ 
   subsets: ["latin"], 
   variable: "--font-inter",
-  weight: ["300", "400", "500"]
+  weight: ["300", "400", "500", "600"]
 });
 
 export const metadata: Metadata = {
-  title: "Levita - Solar Aromatic Innovations",
-  description: "Premium solar-powered and levitating car aromatics.",
+  title: "NAQTOL - Smartfonlar va Aksesuarlar",
+  description: "Eng so'nggi rusumdagi yangi hamda hamyonbop ishlatilgan (B/U) smartfonlar, original aksesuarlar do'koni.",
 };
 
-// Next.js 15 uchun params'ni Promise tipida yozamiz
 export default async function RootLayout({
   children,
   params
@@ -45,17 +43,15 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: Promise<{locale: string}>; 
 }) {
-  // params ichidan locale'ni await orqali ajratib olamiz
   const { locale } = await params;
   const messages = await getMessages();
   
   return (
     <html lang={locale} className={`${montserrat.variable} ${inter.variable} dark`}>
     <head>
-    {/* Telegram WebApp rasmiy SDK skripti */}
     <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     </head>
-    <body className="font-sans antialiased text-foreground bg-background flex flex-col min-h-screen">
+    <body className="font-sans antialiased text-white bg-[#050505] flex flex-col min-h-screen selection:bg-cyan-500 selection:text-black">
     <NextIntlClientProvider messages={messages}>
     <SmoothScroll>
     <Header />

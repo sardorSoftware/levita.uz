@@ -2,11 +2,22 @@
     "Header": {
         "home": "Home",
         "catalog": "Catalog",
-        "cart": "Cart"
+        "cart": "Cart",
+        "new_phones": "New Smartphones",
+        "used_phones": "Used Phones",
+        "accessories": "Accessories"
     },
     "Hero": {
-        "title": "LEVITA",
-        "subtitle": "Premium solar-powered and levitating aromatics.",
-        "cta": "Explore"
+        "title": "NAQTOL",
+        "subtitle": "Store for modern smartphones, affordable used phones, and original accessories.",
+        "cta": "Explore Catalog"
+    },
+    "Catalog": {
+        "title": "Catalog",
+        "all": "All Products",
+        "new": "New Smartphones",
+        "used": "Used Phones",
+        "accessories": "Accessories",
+        "add_to_cart": "Add to Cart"
     }
 }

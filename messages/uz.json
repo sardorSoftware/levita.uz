@@ -2,11 +2,22 @@
     "Header": {
         "home": "Asosiy",
         "catalog": "Katalog",
-        "cart": "Savatcha"
+        "cart": "Savatcha",
+        "new_phones": "Yangi smartfonlar",
+        "used_phones": "Ishlatilgan telefonlar",
+        "accessories": "Aksesuarlar"
     },
     "Hero": {
-        "title": "LEVITA",
-        "subtitle": "Quyosh energiyasi va havoda muallaq turuvchi ifor.",
-        "cta": "Kashf etish"
+        "title": "NAQTOL",
+        "subtitle": "Eng so'nggi rusumdagi smartfonlar, hamyonbop b/u telefonlar va original aksesuarlar.",
+        "cta": "Katalogga o'tish"
+    },
+    "Catalog": {
+        "title": "Katalog",
+        "all": "Barchasi",
+        "new": "Yangi smartfonlar",
+        "used": "Ishlatilgan (B/U)",
+        "accessories": "Aksesuarlar",
+        "add_to_cart": "Savatchaga qo'shish"
     }
 }

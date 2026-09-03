@@ -1,23 +1,20 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-// Server-side rendering (SSR) muhitida xato bermasligi uchun tekshiruv
 if (typeof window !== "undefined") {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-// Barcha GSAP nishonlari uchun umumiy tip
 type TargetType = string | Element | Element[] | null;
 
-// Mahsulot havoda muallaq turishi effekti
+// Smartfonlar havoda muallaq turishi effekti (sal tekinroq va barqaror qilingan)
 export const animateLevitation = (element: TargetType) => {
-    // Element mavjud bo'lmasa, funksiyani to'xtatish
     if (!element) return; 
     
     return gsap.to(element, {
-        y: -15,
-        rotation: 2,
-        duration: 3,
+        y: -10,
+        rotation: 1,
+        duration: 4,
         ease: "sine.inOut",
         yoyo: true,
         repeat: -1,
@@ -26,12 +23,8 @@ export const animateLevitation = (element: TargetType) => {
 
 // Skrol qilganda pastdan chiroyli qalqib chiquvchi effekt
 export const animateRevealUp = (elements: TargetType, triggerContainer?: TargetType) => {
-    // Elementlar mavjudligini va bo'sh massiv emasligini tekshirish
     if (!elements || (Array.isArray(elements) && elements.length === 0)) return;
     
-    // ScrollTrigger qaysi elementga qarab ishlashini aniqlash:
-    // Agar maxsus triggerContainer berilgan bo'lsa shuni, 
-    // yo'qsa massivning birinchi elementini, bo'lmasa elementning o'zini oladi.
     const scrollTriggerTarget = triggerContainer || (Array.isArray(elements) ? elements[0] : elements);
     
     return gsap.fromTo(

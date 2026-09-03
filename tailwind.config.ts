@@ -11,18 +11,18 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                background: "#0D0F12", // Asosiy to'q qora fon
+                background: "#050505", // OLED to'q qora fon
                 foreground: "#EAEAEA", // Asosiy oqish-kulrang matn
-                primary: "#FFFFFF",    // Urg'u beriladigan oq rang (Glow effektlar uchun)
-                border: "#1F2328",     // Juda xira kulrang (kerak bo'lib qolsa)
+                primary: "#06b6d4",    // Neon Cyan urg'u rangi (texnika uchun)
+                border: "#1F2328",     // Nozik kulrang chiziqlar
             },
             fontFamily: {
-                montserrat: ['var(--font-montserrat)'], // Sarlavhalar uchun
-                inter: ['var(--font-inter)'],           // Oddiy matnlar uchun
+                montserrat: ['var(--font-montserrat)'], 
+                inter: ['var(--font-inter)'],           
             },
         },
     },
-    plugins: [require("tailwindcss-animate")], // Animatsiyalar uchun Shadcn plagini
+    plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

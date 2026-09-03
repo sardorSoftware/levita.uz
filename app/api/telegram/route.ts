@@ -12,18 +12,32 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Telegram API kalitlari topilmadi" }, { status: 500 });
         }
         
-        // Xabarni chiroyli qilib formatlash
-        let message = `🚀 <b>YANGI BUYURTMA (LEVITA)</b>\n\n`;
+        // Xavfsizlik uchun tekshiruv: Ma'lumotlar to'liqligi
+        if (!name || !phone || !cart || !Array.isArray(cart) || cart.length === 0) {
+            return NextResponse.json({ error: "Buyurtma ma'lumotlari xato yoki bo'sh" }, { status: 400 });
+        }
+        
+        // NAQTOL kiber temasiga moslashtirilgan xabar formati
+        let message = `⚡ <b>YANGI BUYURTMA - NAQTOL</b> ⚡\n\n`;
         message += `👤 <b>Xaridor:</b> ${name}\n`;
         message += `📞 <b>Telefon:</b> ${phone}\n`;
-        message += `📍 <b>Manzil:</b> ${address}\n\n`;
+        message += `📍 <b>Manzil:</b> ${address || "Ko'rsatilmagan"}\n\n`;
         message += `🛒 <b>Mahsulotlar:</b>\n`;
         
         cart.forEach((item: any, index: number) => {
-            message += `${index + 1}. ${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}\n`;
+            const itemPrice = Number(item.price) || 0;
+            const itemQty = Number(item.quantity) || 1;
+            const itemTotal = itemPrice * itemQty;
+            
+            message += `▪️ ${index + 1}. <b>${item.name || "Mahsulot"}</b> (x${itemQty}) — $${itemTotal.toFixed(2)}\n`;
         });
         
-        message += `\n💰 <b>JAMI SUMMA:</b> $${total.toFixed(2)}`;
+        // Agar total kelmasa, o'zi avtomat hisoblab ketadi
+        const finalTotal = typeof total === 'number' ? total : cart.reduce((acc: number, item: any) => {
+            return acc + (Number(item.price) || 0) * (Number(item.quantity) || 1);
+        }, 0);
+        
+        message += `\n💰 <b>JAMI SUMMA:</b> <b>$${finalTotal.toFixed(2)}</b>`;
         
         // Telegram API ga so'rov yuborish
         const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -39,13 +53,16 @@ export async function POST(req: Request) {
             }),
         });
         
+        const telegramData = await response.json();
+        
         if (!response.ok) {
+            console.error("Telegram API xatosi:", telegramData);
             throw new Error("Telegram'ga yuborishda xatolik");
         }
         
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error("API Error:", error);
-        return NextResponse.json({ error: "Server xatosi" }, { status: 500 });
+        console.error("API Server Error:", error);
+        return NextResponse.json({ error: "Server xatosi yuz berdi" }, { status: 500 });
     }
 }
