@@ -1,54 +1,56 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Buyurtmalarni olish (Admin panel uchun)
+// ================= BUYURTMALARNI OLISH (GET) =================
 export async function GET() {
     try {
         const orders = await prisma.order.findMany({
             orderBy: { createdAt: "desc" },
         });
-        return NextResponse.json(orders, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ error: "Buyurtmalarni olishda xatolik" }, { status: 500 });
+        return NextResponse.json({ success: true, data: orders }, { status: 200 });
+    } catch (error: unknown) {
+        console.error("Orders GET Error:", error);
+        return NextResponse.json({ success: false, error: "Buyurtmalarni olishda xatolik" }, { status: 500 });
     }
 }
 
-// Telegram botdan kelgan buyurtmani saqlash uchun
-export async function POST(request: Request) {
+// ================= YANGI BUYURTMA QO'SHISH (POST) =================
+export async function POST(req: Request) {
     try {
-        const body = await request.json();
-        const { customerName, phone, telegramId, items, totalPrice } = body;
+        const body = await req.json();
+        const { customerName, phone, address, telegramId, telegramUser, items, totalPrice, source } = body;
         
+        // Majburiy maydonlarni tekshiramiz
+        if (!customerName || !phone || !items || totalPrice === undefined) {
+            return NextResponse.json(
+                { success: false, error: "Ism, telefon raqami, mahsulotlar va umumiy summa kiritilishi shart!" },
+                { status: 400 }
+            );
+        }
+        
+        // Bazaga buyurtma yaratamiz
         const newOrder = await prisma.order.create({
             data: {
                 customerName,
                 phone,
-                telegramId,
-                items,
-                totalPrice,
+                address: address || null,
+                telegramId: telegramId ? String(telegramId) : null,
+                telegramUser: telegramUser || null,
+                items, // JSON formatdagi mahsulotlar massivi
+                totalPrice: Number(totalPrice),
+                source: source || "WEBSITE",
                 status: "NEW",
             },
         });
         
-        return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
-    } catch (error) {
-        return NextResponse.json({ error: "Buyurtma saqlanmadi" }, { status: 500 });
-    }
-}
-
-// Buyurtma statusini o'zgartirish (PATCH)
-export async function PATCH(request: Request) {
-    try {
-        const body = await request.json();
-        const { id, status } = body;
+        return NextResponse.json({ success: true, data: newOrder }, { status: 201 });
         
-        const updatedOrder = await prisma.order.update({
-            where: { id },
-            data: { status },
-        });
-        
-        return NextResponse.json({ success: true, order: updatedOrder }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ error: "Statusni yangilash imkonsiz" }, { status: 500 });
+    } catch (error: unknown) {
+        console.error("Order POST Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Buyurtma saqlashda xatolik yuz berdi";
+        return NextResponse.json(
+            { success: false, error: errorMessage },
+            { status: 500 }
+        );
     }
 }

@@ -1,29 +1,39 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+}
+
 model Product {
   id          String   @id @default(cuid())
-  title       String
-  price       Float
-  image       String
+  title       String   // Mahsulot nomi
+  price       Float    // Narxi
+  image       String   @db.Text // Rasm URL manzili
   category    String   // 'new_phones', 'used_phones', 'accessories'
-  description String?
+  badge       String?  // 'Yangi', 'Chegirma', 'Top' kabi belgilar (ProductCard uchun muhim)
+  description String?  // Batafsil ma'lumot
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category]) // Kategoriyalar bo'yicha qidiruvni tezlashtirish uchun
 }
 
 model Order {
   id           String   @id @default(cuid())
-  customerName String
-  phone        String
-  telegramId   String?
+  customerName String   // Buyurtmachi ismi
+  phone        String   // Telefon raqami
+  address      String?  // Yetkazib berish manzili yoki lokatsiyasi
+  telegramId   String?  // Telegram ID
+  telegramUser String?  // Telegram username (@username)
   items        Json     // Savatchadagi mahsulotlar (JSON formatda)
-  totalPrice   Float
-  status       String   @default("NEW") // NEW, CONFIRMED, COMPLETED, CANCELLED
+  totalPrice   Float    // Umumiy summa
+  source       String   @default("WEBSITE") // "WEBSITE" yoki "TG_BOT"
+  status       String   @default("NEW")     // NEW, CONFIRMED, COMPLETED, CANCELLED
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])    // Status bo'yicha buyurtmalarni filtrlashni tezlashtiradi
+  @@index([createdAt]) // Sana bo'yicha saralash uchun
 }

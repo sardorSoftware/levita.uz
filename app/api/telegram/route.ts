@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
+import { prisma } from "@/lib/prisma"; // Global prisma klienti olib kelindi
 
 export async function POST(req: Request) {
     try {
         const data = await req.json();
-        const { name, phone, address, cart, total } = data;
+        const { name, phone, address, message, cart, items, total, totalPrice } = data;
         
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -12,57 +13,79 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Telegram API kalitlari topilmadi" }, { status: 500 });
         }
         
-        // Xavfsizlik uchun tekshiruv: Ma'lumotlar to'liqligi
-        if (!name || !phone || !cart || !Array.isArray(cart) || cart.length === 0) {
-            return NextResponse.json({ error: "Buyurtma ma'lumotlari xato yoki bo'sh" }, { status: 400 });
+        if (!name || !phone) {
+            return NextResponse.json({ error: "Ism va telefon raqam kiritilishi shart" }, { status: 400 });
         }
         
-        // NAQTOL kiber temasiga moslashtirilgan xabar formati
-        let message = `⚡ <b>YANGI BUYURTMA - NAQTOL</b> ⚡\n\n`;
-        message += `👤 <b>Xaridor:</b> ${name}\n`;
-        message += `📞 <b>Telefon:</b> ${phone}\n`;
-        message += `📍 <b>Manzil:</b> ${address || "Ko'rsatilmagan"}\n\n`;
-        message += `🛒 <b>Mahsulotlar:</b>\n`;
+        // Savatchadan mahsulotlar kelganini aniqlaymiz (Buyurtma formasi)
+        const orderItems = cart || items || [];
+        const finalTotal = total || totalPrice || 0;
+        const isOrder = orderItems.length > 0;
         
-        cart.forEach((item: any, index: number) => {
-            const itemPrice = Number(item.price) || 0;
-            const itemQty = Number(item.quantity) || 1;
-            const itemTotal = itemPrice * itemQty;
+        let tgMessage = "";
+        
+        if (isOrder) {
+            // 1. Agar buyurtma bo'lsa - mahsulotlarni chiroyli ro'yxat qilamiz
+            const itemsListText = orderItems.map((item: any, idx: number) => {
+                const itemTitle = item.title || item.name || "Mahsulot";
+                const itemQty = item.qty || item.quantity || 1;
+                const itemPrice = item.price || 0;
+                return `  ${idx + 1}. ${itemTitle} x${itemQty} — $${(itemPrice * itemQty).toLocaleString()}`;
+            }).join('\n');
             
-            message += `▪️ ${index + 1}. <b>${item.name || "Mahsulot"}</b> (x${itemQty}) — $${itemTotal.toFixed(2)}\n`;
-        });
+            tgMessage = `🛒 <b>YANGI BUYURTMA - NAQTOL (Vebsayt)</b> 🛒\n\n` +
+            `👤 <b>Mijoz:</b> ${name}\n` +
+            `📞 <b>Telefon:</b> ${phone}\n` +
+            `📍 <b>Manzil:</b> ${address || "Ko'rsatilmagan"}\n\n` +
+            `📦 <b>Buyurtmalar:</b>\n${itemsListText}\n\n` +
+            `💰 <b>Jami summa:</b> $${Number(finalTotal).toLocaleString()}`;
+            
+            // 2. Bazaga saqlaymiz (Admin CRM panelda ko'rinishi uchun)
+            try {
+                await prisma.order.create({
+                    data: {
+                        customerName: name,
+                        phone: phone,
+                        address: address || "",
+                        items: orderItems,
+                        totalPrice: Number(finalTotal),
+                        source: "WEBSITE", // Vebsaytdan kelgani belgilanadi
+                        status: "NEW"      // Yangi statusda tushadi
+                    }
+                });
+            } catch (dbError) {
+                console.error("Bazaga yozishda xatolik:", dbError);
+            }
+            
+        } else {
+            // Agar oddiy xabar / aloqa formasi bo'lsa
+            tgMessage = `🔔 <b>YANGI XABAR - NAQTOL</b> 🔔\n\n` +
+            `👤 <b>Ism:</b> ${name}\n` +
+            `📞 <b>Telefon:</b> ${phone}\n` +
+            `📝 <b>Xabar:</b> ${message || "Yo'q"}`;
+        }
         
-        // Agar total kelmasa, o'zi avtomat hisoblab ketadi
-        const finalTotal = typeof total === 'number' ? total : cart.reduce((acc: number, item: any) => {
-            return acc + (Number(item.price) || 0) * (Number(item.quantity) || 1);
-        }, 0);
-        
-        message += `\n💰 <b>JAMI SUMMA:</b> <b>$${finalTotal.toFixed(2)}</b>`;
-        
-        // Telegram API ga so'rov yuborish
-        const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        const response = await fetch(telegramUrl, {
+        // 3. Telegram botga xabar yuborish
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: chatId,
-                text: message,
+                text: tgMessage,
                 parse_mode: 'HTML',
             }),
         });
         
-        const telegramData = await response.json();
-        
         if (!response.ok) {
-            console.error("Telegram API xatosi:", telegramData);
-            throw new Error("Telegram'ga yuborishda xatolik");
+            const errData = await response.json();
+            console.error("Telegram API Error:", errData);
+            return NextResponse.json({ error: "Telegram'ga yuborishda xatolik" }, { status: 500 });
         }
         
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("API Server Error:", error);
-        return NextResponse.json({ error: "Server xatosi yuz berdi" }, { status: 500 });
+        return NextResponse.json({ success: true }, { status: 200 });
+        
+    } catch (error: any) {
+        console.error("Telegram API Server Error:", error.message || error);
+        return NextResponse.json({ error: "Server xatos yuz berdi" }, { status: 500 });
     }
 }

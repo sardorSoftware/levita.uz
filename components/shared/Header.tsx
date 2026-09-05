@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { ShoppingBag, Smartphone, RefreshCw, Headphones } from "lucide-react";
+import { ShoppingBag, Smartphone, RefreshCw, Headphones, Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header() {
     const t = useTranslations("Header");
@@ -16,6 +16,7 @@ export default function Header() {
     
     const { items, setIsOpen } = useCartStore();
     const [mounted, setMounted] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     
     useEffect(() => {
         setMounted(true);
@@ -23,13 +24,17 @@ export default function Header() {
     
     const totalItems = mounted ? items.reduce((acc, item) => acc + item.quantity, 0) : 0;
     
+    // Xavfsiz til almashtirish funksiyasi (Regular expression yordamida)
     const switchLocale = (newLocale: string) => {
-        if (!pathname) return "/";
-        return pathname.replace(`/${locale}`, `/${newLocale}`);
+        if (!pathname) return `/${newLocale}`;
+        const segments = pathname.split("/");
+        segments[1] = newLocale; // Ikkinchi segment doimo til kodi (masalan: /uz/...)
+        return segments.join("/");
     };
     
     const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, category: string) => {
         e.preventDefault();
+        setMobileMenuOpen(false);
         if (pathname !== `/${locale}` && pathname !== `/`) {
             router.push(`/${locale}#${category}`);
         } else {
@@ -61,7 +66,7 @@ export default function Header() {
         </motion.div>
         </Link>
         
-        {/* 2. MARKAZIY KAPSULA MENYU (PILL NAVBAR) */}
+        {/* 2. MARKAZIY KAPSULA MENYU (PILL NAVBAR - Desktop) */}
         <nav className="hidden lg:flex items-center gap-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-1.5 shadow-2xl">
         <a 
         href={`/${locale}#new-phones`} 
@@ -91,10 +96,11 @@ export default function Header() {
         </a>
         </nav>
         
-        {/* 3. O'NG TOMON: TIL ALMASHTIRGICH VA SAVATCHA */}
-        <div className="flex items-center gap-4">
+        {/* 3. O'NG TOMON: TIL ALMASHTIRGICH, SAVATCHA VA MOBIL MENYU */}
+        <div className="flex items-center gap-3">
+        
         {/* Til Almashtirgich (Pill Style) */}
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider bg-white/5 px-3.5 py-2 rounded-full border border-white/10">
+        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold uppercase tracking-wider bg-white/5 px-3.5 py-2 rounded-full border border-white/10">
         <Link 
         href={switchLocale("uz")} 
         className={`transition-colors ${locale === "uz" ? "text-[#ccff00] font-bold" : "text-white/60 hover:text-white"}`}
@@ -122,6 +128,7 @@ export default function Header() {
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)} 
         className="relative flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all hover:border-[#ccff00]/40 group"
+        aria-label="Cart"
         >
         <ShoppingBag size={18} className="group-hover:text-[#ccff00] transition-colors" />
         
@@ -131,9 +138,84 @@ export default function Header() {
             </span>
         )}
         </motion.button>
+        
+        {/* Mobil Menyu Ochish Tugmasi */}
+        <button 
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="lg:hidden flex items-center justify-center w-11 h-11 rounded-full bg-white/5 border border-white/10 text-white hover:border-[#ccff00]/40"
+        aria-label="Toggle Menu"
+        >
+        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
         </div>
         
         </div>
+        
+        {/* MOBIL MENYU DROPDOWN */}
+        <AnimatePresence>
+        {mobileMenuOpen && (
+            <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-full left-0 right-0 bg-[#05130f]/95 backdrop-blur-2xl border-b border-white/10 p-6 flex flex-col gap-4 lg:hidden shadow-2xl"
+            >
+            <nav className="flex flex-col gap-3">
+            <a 
+            href={`/${locale}#new-phones`} 
+            onClick={(e) => handleNavClick(e, "new-phones")}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white/5 text-sm font-semibold text-white hover:bg-[#ccff00] hover:text-black transition-all"
+            >
+            <Smartphone size={18} className="text-[#ccff00]" />
+            <span>{t("new_phones") || "Yangi smartfonlar"}</span>
+            </a>
+            
+            <a 
+            href={`/${locale}#used-phones`} 
+            onClick={(e) => handleNavClick(e, "used-phones")}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white/5 text-sm font-semibold text-white hover:bg-[#ccff00] hover:text-black transition-all"
+            >
+            <RefreshCw size={18} className="text-[#ccff00]" />
+            <span>{t("used_phones") || "Ishlatilgan telefonlar"}</span>
+            </a>
+            
+            <a 
+            href={`/${locale}#accessories`} 
+            onClick={(e) => handleNavClick(e, "accessories")}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white/5 text-sm font-semibold text-white hover:bg-[#ccff00] hover:text-black transition-all"
+            >
+            <Headphones size={18} className="text-[#ccff00]" />
+            <span>{t("accessories") || "Aksesuarlar"}</span>
+            </a>
+            </nav>
+            
+            {/* Mobil Til Almashtirgich */}
+            <div className="flex items-center justify-center gap-4 pt-4 border-t border-white/10 text-sm font-semibold uppercase">
+            <Link 
+            href={switchLocale("uz")} 
+            onClick={() => setMobileMenuOpen(false)}
+            className={`px-4 py-1.5 rounded-full ${locale === "uz" ? "bg-[#ccff00] text-black font-bold" : "text-white/60"}`}
+            >
+            Uz
+            </Link>
+            <Link 
+            href={switchLocale("ru")} 
+            onClick={() => setMobileMenuOpen(false)}
+            className={`px-4 py-1.5 rounded-full ${locale === "ru" ? "bg-[#ccff00] text-black font-bold" : "text-white/60"}`}
+            >
+            Ru
+            </Link>
+            <Link 
+            href={switchLocale("en")} 
+            onClick={() => setMobileMenuOpen(false)}
+            className={`px-4 py-1.5 rounded-full ${locale === "en" ? "bg-[#ccff00] text-black font-bold" : "text-white/60"}`}
+            >
+            En
+            </Link>
+            </div>
+            </motion.div>
+        )}
+        </AnimatePresence>
         </header>
     );
 }

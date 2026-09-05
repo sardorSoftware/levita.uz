@@ -1,73 +1,56 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import HeroSlider from "@/components/shared/HeroSlider";
 import Categories from "@/components/shared/Categories";
 import PromoBanner from "@/components/shared/PromoBanner";
 import ProductCard from "@/components/shared/ProductCard";
-import CartSidebar from "@/components/shared/CartSidebar";
+import CartDrawer from "@/components/shared/CartDrawer";
 import Footer from "@/components/shared/Footer";
-import { animateRevealUp } from "@/lib/animations";
+import { prisma } from "@/lib/prisma";
 import { Smartphone, RefreshCw, Headphones } from "lucide-react";
+import ClientRevealAnimation from "@/components/shared/ClientRevealAnimation";
 
-// Vaqtinchalik Ma'lumotlar (Baza ulanguncha)
-const NEW_PHONES = [
-  { id: "1", name: "iPhone 15 Pro Max 256GB", price: 1180, image: "/products/smartphone.png", badge: "Yangi" },
-  { id: "2", name: "Samsung Galaxy S24 Ultra 512GB", price: 1090, image: "/products/smartphone.png", badge: "Yangi" },
-  { id: "3", name: "iPhone 15 128GB (Black)", price: 770, image: "/products/smartphone.png", badge: "Yangi" },
-  { id: "4", name: "Xiaomi 14 Ultra 512GB", price: 880, image: "/products/smartphone.png", badge: "Yangi" },
-];
+export const revalidate = 60; // Har 60 soniyada ma'lumotlarni yangilab turish (ISR)
 
-const USED_PHONES = [
-  { id: "5", name: "iPhone 14 Pro Max 128GB", price: 790, image: "/products/smartphone.png", badge: "B/U 89%" },
-  { id: "6", name: "iPhone 13 Pro 256GB", price: 590, image: "/products/smartphone.png", badge: "B/U 85%" },
-  { id: "7", name: "Samsung Galaxy S23 Ultra 256GB", price: 650, image: "/products/smartphone.png", badge: "B/U 92%" },
-  { id: "8", name: "iPhone 12 128GB", price: 420, image: "/products/smartphone.png", badge: "B/U 88%" },
-];
+// Prisma natijasidan turini avtomatik olib beruvchi yordamchi type
+type Product = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
 
-const ACCESSORIES = [
-  { id: "9", name: "AirPods Pro 2 (Type-C)", price: 210, image: "/products/smartwatch.png", badge: "Top" },
-  { id: "10", name: "Apple 20W USB-C Power Adapter", price: 25, image: "/products/smartwatch.png", badge: "Original" },
-  { id: "11", name: "MagSafe Silicone Case iPhone 15", price: 15, image: "/products/smartwatch.png", badge: "Chexol" },
-  { id: "12", name: "Anker PowerBank 20000mAh", price: 45, image: "/products/smartwatch.png", badge: "Aksessuar" },
-];
-
-export default function Home() {
-  const t = useTranslations("Catalog");
-  const sectionRef = useRef<HTMLDivElement>(null);
+export default async function Home() {
+  const t = await getTranslations("Catalog");
   
-  useEffect(() => {
-    if (sectionRef.current) {
-      const cards = sectionRef.current.querySelectorAll('.product-card-anim');
-      animateRevealUp(Array.from(cards));
-    }
-  }, []);
+  let products: Product[] = [];
+  
+  // Bazadan mahsulotlarni xavfsiz olish (Agar baza ishlamasa sayt qulab tushmaydi)
+  try {
+    products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error) {
+    console.error("Bazadan mahsulotlarni olishda xatolik (Kredensiallarni tekshiring):", error);
+  }
+  
+  // Bazadagi category maydoniga moslab filtrlaymiz
+  const newPhones = products.filter((p: Product) => p.category.toLowerCase() === "new_phones" || p.category.toLowerCase() === "yangi");
+  const usedPhones = products.filter((p: Product) => p.category.toLowerCase() === "used_phones" || p.category.toLowerCase() === "b/u");
+  const accessories = products.filter((p: Product) => p.category.toLowerCase() === "accessories" || p.category.toLowerCase() === "aksessuar");
   
   return (
     <>
-    {/* Background rangi endi globals.css dan olinadi, shuning uchun bu yerdan bg-[#050505] olib tashlandi */}
-    <main className="flex flex-col min-h-screen text-white relative" ref={sectionRef}>
+    <main className="flex flex-col min-h-screen text-white relative">
     
-    {/* 1. HERO BANNER */}
     <HeroSlider />
-    
-    {/* 2. KATEGORIYALAR (Glassmorphism grid) */}
     <Categories />
-    
-    {/* 3. PROMO BANNER (Katta reklama bloki) */}
     <PromoBanner />
     
-    {/* KATALOG UMUMIY SARLAVHA */}
     <div id="catalog" className="max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-8 text-center scroll-mt-28">
     <h2 className="font-heading text-3xl md:text-5xl font-extrabold tracking-wider uppercase text-white">
     {t("title") || "Katalog"}
     </h2>
-    {/* Neon chiziq */}
     <div className="w-16 h-[3px] bg-[#ccff00] mx-auto mt-4 shadow-[0_0_15px_rgba(204,255,0,0.6)] rounded-full" />
     </div>
     
-    {/* 4. YANGI SMARTFONLAR BO'LIMI */}
+    <ClientRevealAnimation>
+    
+    {/* 1. YANGI SMARTFONLAR BO'LIMI */}
     <section id="new-phones" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
     <Smartphone className="text-[#ccff00]" size={28} />
@@ -75,16 +58,26 @@ export default function Home() {
     {t("new") || "Yangi smartfonlar"}
     </h3>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {NEW_PHONES.map((product) => (
-      <div key={product.id} className="product-card-anim opacity-0">
-      <ProductCard {...product} />
+    {newPhones.length === 0 ? (
+      <p className="text-gray-500 text-sm py-4">Hozircha yangi smartfonlar mavjud emas (yoki bazaga ulanish tekshirilmoqda).</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {newPhones.map((product: Product) => (
+        <div key={product.id} className="product-card-anim opacity-0">
+        <ProductCard  
+        id={product.id}
+        name={product.title}
+        price={product.price}
+        image={product.image || "/products/smartphone.png"}
+        badge={product.badge || "Yangi"}
+        />
+        </div>
+      ))}
       </div>
-    ))}
-    </div>
+    )}
     </section>
     
-    {/* 5. ISHLATILGAN TELEFONLAR BO'LIMI */}
+    {/* 2. ISHLATILGAN TELEFONLAR BO'LIMI */}
     <section id="used-phones" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
     <RefreshCw className="text-[#ccff00]" size={28} />
@@ -92,16 +85,26 @@ export default function Home() {
     {t("used") || "Ishlatilgan telefonlar (B/U)"}
     </h3>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {USED_PHONES.map((product) => (
-      <div key={product.id} className="product-card-anim opacity-0">
-      <ProductCard {...product} />
+    {usedPhones.length === 0 ? (
+      <p className="text-gray-500 text-sm py-4">Hozircha B/U telefonlar mavjud emas.</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {usedPhones.map((product: Product) => (
+        <div key={product.id} className="product-card-anim opacity-0">
+        <ProductCard
+        id={product.id}
+        name={product.title}
+        price={product.price}
+        image={product.image || "/products/smartphone.png"}
+        badge={product.badge || "B/U"}
+        />
+        </div>
+      ))}
       </div>
-    ))}
-    </div>
+    )}
     </section>
     
-    {/* 6. AKSESUARLAR BO'LIMI */}
+    {/* 3. AKSESUARLAR BO'LIMI */}
     <section id="accessories" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 pb-24 scroll-mt-28 w-full">
     <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
     <Headphones className="text-[#ccff00]" size={28} />
@@ -109,19 +112,31 @@ export default function Home() {
     {t("accessories") || "Aksesuarlar"}
     </h3>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {ACCESSORIES.map((product) => (
-      <div key={product.id} className="product-card-anim opacity-0">
-      <ProductCard {...product} />
+    {accessories.length === 0 ? (
+      <p className="text-gray-500 text-sm py-4">Hozircha aksesuarlar mavjud emas.</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {accessories.map((product: Product) => (
+        <div key={product.id} className="product-card-anim opacity-0">
+        <ProductCard
+        id={product.id}
+        name={product.title}
+        price={product.price}
+        image={product.image || "/products/smartwatch.png"}
+        badge={product.badge || "Aksessuar"}
+        />
+        </div>
+      ))}
       </div>
-    ))}
-    </div>
+    )}
     </section>
+    
+    </ClientRevealAnimation>
     
     </main>
     
     <Footer />
-    <CartSidebar />
+    <CartDrawer />
     </>
   );
 }

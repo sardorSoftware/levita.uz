@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
+  // ⚡ Prisma va Turbopack muammosiz ishlashi uchun shart:
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default withNextIntl(nextConfig);

@@ -6,6 +6,7 @@ import "../globals.css";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import Header from "@/components/shared/Header";
 
+// Telegram WebApp turlari to'liq kengaytirildi
 declare global {
   interface Window {
     Telegram?: {
@@ -14,6 +15,23 @@ declare global {
         expand: () => void;
         close: () => void;
         sendData: (data: string) => void;
+        initDataUnsafe?: {
+          query_id?: string;
+          user?: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            language_code?: string;
+            is_premium?: boolean;
+          };
+          auth_date?: string;
+          hash?: string;
+        };
+        themeParams?: Record<string, string>;
+        isExpanded?: boolean;
+        viewportHeight?: number;
+        viewportStableHeight?: number;
       };
     };
   }
@@ -31,7 +49,6 @@ const inter = Inter({
   weight: ["300", "400", "500", "600"]
 });
 
-// Rasmdagi kabi aksent yozuvlar uchun qo'lyozma shrift
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -48,18 +65,25 @@ export default async function RootLayout({
   params
 }: {
   children: React.ReactNode;
-  params: Promise<{locale: string}>; 
+  params: Promise<{ locale: string }>; 
 }) {
   const { locale } = await params;
-  const messages = await getMessages();
+  
+  // next-intl tarjimalarini aniq tanlangan locale bo'yicha yuklaymiz
+  const messages = await getMessages({ locale });
   
   return (
-    <html lang={locale} className={`${montserrat.variable} ${inter.variable} ${caveat.variable} dark`}>
+    <html 
+    lang={locale} 
+    className={`${montserrat.variable} ${inter.variable} ${caveat.variable} dark`} 
+    suppressHydrationWarning
+    >
     <head>
-    <script src="https://telegram.org/js/telegram-web-app.js" async></script>
+    {/* Next/Script o'rniga oddiy HTML script tegi ishlatildi */}
+    <script src="https://telegram.org/js/telegram-web-app.js" async />
     </head>
-    <body className="font-sans antialiased text-white bg-[#05130f] flex flex-col min-h-screen selection:bg-[#ccff00] selection:text-black">
-    <NextIntlClientProvider messages={messages}>
+    <body className="font-sans antialiased text-[#ffffff] bg-[#05130f] flex flex-col min-h-screen selection:bg-[#ccff00] selection:text-black">
+    <NextIntlClientProvider messages={messages} locale={locale}>
     <SmoothScroll>
     <Header />
     <div className="pt-20 flex-1 flex flex-col">

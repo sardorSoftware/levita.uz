@@ -16,7 +16,7 @@ export default function PromoBanner() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full rounded-[40px] overflow-hidden bg-[#0f2a20]/60 backdrop-blur-xl border border-white/10 flex flex-col lg:flex-row items-center justify-between p-8 sm:p-12 lg:p-16 gap-10"
+        className="relative w-full rounded-[40px] overflow-hidden bg-[#0f2a20]/60 backdrop-blur-xl border border-white/10 flex flex-col lg:flex-row items-center justify-between p-8 sm:p-12 lg:p-16 gap-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
         >
         {/* Orqa fondagi yorug'lik effekti */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#ccff00]/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
@@ -54,10 +54,10 @@ export default function PromoBanner() {
         </div>
         </div>
         
-        {/* Tugma */}
+        {/* Tugma (Katalogdagi aksessuarlar filtriga olib boradi) */}
         <Link
-        href={`/${locale}#accessories`}
-        className="group flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-extrabold text-sm uppercase tracking-wider transition-all duration-300 hover:bg-[#ccff00] hover:scale-105 hover:shadow-[0_0_20px_rgba(204,255,0,0.4)]"
+        href={`/${locale}/catalog?category=accessories`}
+        className="group flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-extrabold text-sm uppercase tracking-wider transition-all duration-300 hover:bg-[#ccff00] hover:scale-105 hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] cursor-pointer"
         >
         <span>Hoziroq xarid qilish</span>
         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

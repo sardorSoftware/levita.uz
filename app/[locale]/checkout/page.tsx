@@ -5,7 +5,8 @@ import { useCartStore } from "@/store/useCartStore";
 import { useRouter } from "next/navigation";
 
 export default function CheckoutPage() {
-    const { items, getTotal } = useCartStore();
+    // clearCart funksiyasini ham chaqirib olamiz
+    const { items, getTotal, clearCart } = useCartStore();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     
@@ -18,28 +19,40 @@ export default function CheckoutPage() {
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (items.length === 0) {
+            alert("Savatchangiz bo'sh!");
+            return;
+        }
+        
         setLoading(true);
         
         try {
-            const response = await fetch("/api/telegram", {
+            // Ma'lumotlarni to'g'ridan-to'g'ri /api/orders ga yuboramiz (Admin CRM ko'rishi uchun)
+            const response = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    ...formData,
-                    cart: items,
-                    total: getTotal(),
+                    customerName: formData.name, // Prisma bazasidagi nomga moslandi
+                    phone: formData.phone,
+                    address: formData.address,
+                    items: items,
+                    totalPrice: getTotal(),
+                    source: "WEBSITE" // Vebsaytdan kelgani belgilanmoqda
                 }),
             });
             
+            const data = await response.json();
+            
             if (response.ok) {
                 alert("Buyurtmangiz muvaffaqiyatli qabul qilindi! Tez orada aloqaga chiqamiz.");
-                // Savatchani tozalash mantiqini qo'shish mumkin
+                clearCart(); // Savatchani tozalash
                 router.push("/");
             } else {
-                alert("Xatolik yuz berdi. Qaytadan urinib ko'ring.");
+                alert(`Xatolik yuz berdi: ${data.error || "Qaytadan urinib ko'ring."}`);
             }
         } catch (error) {
-            console.error(error);
+            console.error("Buyurtma yuborishda xatolik:", error);
+            alert("Tarmoqda xatolik yuz berdi. Internetni tekshiring.");
         } finally {
             setLoading(false);
         }
@@ -56,7 +69,9 @@ export default function CheckoutPage() {
         <input 
         required
         type="text" 
-        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm"
+        placeholder="Masalan: Anvar Toshmatov"
+        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm text-white"
+        value={formData.name}
         onChange={(e) => setFormData({...formData, name: e.target.value})}
         />
         </div>
@@ -65,8 +80,9 @@ export default function CheckoutPage() {
         <input 
         required
         type="tel" 
-        placeholder="+998"
-        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm"
+        placeholder="+998 90 123 45 67"
+        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm text-white"
+        value={formData.phone}
         onChange={(e) => setFormData({...formData, phone: e.target.value})}
         />
         </div>
@@ -75,7 +91,9 @@ export default function CheckoutPage() {
         <textarea 
         required
         rows={3}
-        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm resize-none"
+        placeholder="Toshkent shahri, Chilonzor tumani..."
+        className="w-full bg-[#0D0F12] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors text-sm resize-none text-white"
+        value={formData.address}
         onChange={(e) => setFormData({...formData, address: e.target.value})}
         />
         </div>
@@ -88,7 +106,7 @@ export default function CheckoutPage() {
         <button 
         disabled={loading || items.length === 0}
         type="submit" 
-        className="w-full mt-6 py-4 bg-primary text-background font-medium tracking-widest uppercase rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50"
+        className="w-full mt-6 py-4 bg-primary text-background font-medium tracking-widest uppercase rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50 cursor-pointer"
         >
         {loading ? "Yuborilmoqda..." : "Buyurtmani tasdiqlash"}
         </button>

@@ -5,11 +5,12 @@ if (typeof window !== "undefined") {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-type TargetType = string | Element | Element[] | null;
-
-// Smartfonlar havoda muallaq turishi effekti (sal tekinroq va barqaror qilingan)
-export const animateLevitation = (element: TargetType) => {
+// Smartfonlar va bannerlar uchun havoda muallaq turishi effekti
+export const animateLevitation = (element: gsap.TweenTarget) => {
     if (!element) return; 
+    
+    // Xotirada ortiqcha animatsiya qolib ketishining oldini olish
+    gsap.killTweensOf(element);
     
     return gsap.to(element, {
         y: -10,
@@ -22,10 +23,13 @@ export const animateLevitation = (element: TargetType) => {
 };
 
 // Skrol qilganda pastdan chiroyli qalqib chiquvchi effekt
-export const animateRevealUp = (elements: TargetType, triggerContainer?: TargetType) => {
-    if (!elements || (Array.isArray(elements) && elements.length === 0)) return;
+export const animateRevealUp = (elements: gsap.TweenTarget, triggerContainer?: gsap.TweenTarget) => {
+    if (!elements) return;
     
-    const scrollTriggerTarget = triggerContainer || (Array.isArray(elements) ? elements[0] : elements);
+    const scrollTriggerTarget = triggerContainer || elements;
+    
+    // Avvalgi animatsiyalarni tozalab tashlaymiz
+    gsap.killTweensOf(elements);
     
     return gsap.fromTo(
         elements,
@@ -38,7 +42,7 @@ export const animateRevealUp = (elements: TargetType, triggerContainer?: TargetT
             stagger: 0.2,
             ease: "power3.out",
             scrollTrigger: {
-                trigger: scrollTriggerTarget as string | Element,
+                trigger: scrollTriggerTarget as Element | string,
                 start: "top 85%",
                 toggleActions: "play none none reverse",
             },

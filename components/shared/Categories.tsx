@@ -9,24 +9,24 @@ import { ArrowRight } from "lucide-react";
 export default function Categories() {
     const locale = useLocale();
     
-    // 3 ta asosiy kategoriya (O'zbek tilida to'g'ridan-to'g'ri)
+    // Admin panel va baza kategoriyalariga to'liq moslashtirilgan massiv
     const categories = [
         {
-            id: "new-phones",
+            id: "new_phones",
             title: "Yangi smartfonlar",
-            href: `/${locale}#new-phones`,
+            href: `/${locale}/catalog?category=new_phones`,
             image: "https://images.unsplash.com/photo-1592899677958-c83971c24155?q=80&w=600&auto=format&fit=crop", 
         },
         {
-            id: "used-phones",
+            id: "used_phones",
             title: "Ishlatilgan telefonlar",
-            href: `/${locale}#used-phones`,
+            href: `/${locale}/catalog?category=used_phones`,
             image: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?q=80&w=600&auto=format&fit=crop",
         },
         {
             id: "accessories",
             title: "Aksessuarlar",
-            href: `/${locale}#accessories`,
+            href: `/${locale}/catalog?category=accessories`,
             image: "https://images.unsplash.com/photo-1572569433602-662439dd7b30?q=80&w=600&auto=format&fit=crop",
         }
     ];
@@ -42,7 +42,7 @@ export default function Categories() {
         
         {/* View All tugmasi */}
         <Link 
-        href={`/${locale}#catalog`} 
+        href={`/${locale}/catalog`} 
         className="group flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-[#ccff00] transition-colors"
         >
         <span className="hidden sm:inline">Barchasini ko'rish</span>
@@ -70,7 +70,7 @@ export default function Categories() {
             className="group block relative p-6 sm:p-8 rounded-[32px] bg-white/5 backdrop-blur-xl border border-white/10 hover:border-[#ccff00]/50 transition-all duration-500 overflow-hidden h-[320px] sm:h-[380px] flex flex-col justify-end"
             >
             {/* Ichki Shaffof Gradient qora fon (Yozuvlar aniq ko'rinishi uchun) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-10" />
             
             {/* Rasm (Hover bo'lganda kattalashadi) */}
             <div className="absolute inset-0 flex items-center justify-center p-8 z-0">
@@ -79,7 +79,8 @@ export default function Categories() {
             src={cat.image}
             alt={cat.title}
             fill
-            className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.9)]"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-[0_20px_30px_rgba(0,0,0,0.9)]"
             />
             </div>
             </div>
