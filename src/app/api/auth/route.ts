@@ -29,12 +29,12 @@ export async function POST(req: Request) {
                     firstName: telegramUser.first_name,
                     lastName: telegramUser.last_name || null,
                     username: telegramUser.username || null,
-                    avatarUrl: telegramUser.avatar_url || null,
+                    // avatarUrl bazada yo'qligi uchun olib tashlandi
                 },
             });
         }
         
-        // Xavfsiz konvertatsiya: agar telegramId null bo'lsa, bo'sh string qaytaradi
+        // Xavfsiz konvertatsiya: BigInt ni stringga o'tkazish
         const safeUser = {
             ...user,
             id: user.id.toString(),
