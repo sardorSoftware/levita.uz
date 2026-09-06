@@ -4,36 +4,78 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // url shu yerdan olib tashlandi (Prisma 7 talabi)
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id         String   @id @default(cuid())
+  telegramId BigInt?  @unique
+  firstName  String?
+  lastName   String?
+  username   String?
+  phone      String?
+  role       Role     @default(USER)
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  image    String?
+  products Product[]
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  title       String   // Mahsulot nomi
-  price       Float    // Narxi
-  image       String   @db.Text // Rasm URL manzili
-  category    String   // 'new_phones', 'used_phones', 'accessories'
-  badge       String?  // 'Yangi', 'Chegirma', 'Top' kabi belgilar (ProductCard uchun muhim)
-  description String?  // Batafsil ma'lumot
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([category]) // Kategoriyalar bo'yicha qidiruvni tezlashtirish uchun
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  price       Float
+  oldPrice    Float?
+  isUsed      Boolean     @default(false)
+  inStock     Boolean     @default(true)
+  image       String
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Order {
-  id           String   @id @default(cuid())
-  customerName String   // Buyurtmachi ismi
-  phone        String   // Telefon raqami
-  address      String?  // Yetkazib berish manzili yoki lokatsiyasi
-  telegramId   String?  // Telegram ID
-  telegramUser String?  // Telegram username (@username)
-  items        Json     // Savatchadagi mahsulotlar (JSON formatda)
-  totalPrice   Float    // Umumiy summa
-  source       String   @default("WEBSITE") // "WEBSITE" yoki "TG_BOT"
-  status       String   @default("NEW")     // NEW, CONFIRMED, COMPLETED, CANCELLED
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String      @id @default(cuid())
+  userId    String?     // <-- O'zgartirildi: ixtiyoriy (optional) qilindi
+  user      User?       @relation(fields: [userId], references: [id]) // <-- O'zgartirildi: user ham optional bo'ldi
+  items     OrderItem[]
+  total     Float
+  status    OrderStatus @default(PENDING)
+  address   String?
+  phone     String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
 
-  @@index([status])    // Status bo'yicha buyurtmalarni filtrlashni tezlashtiradi
-  @@index([createdAt]) // Sana bo'yicha saralash uchun
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
 }

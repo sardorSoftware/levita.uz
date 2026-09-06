@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FF4D00;
+  --color-primary-hover: #E04400;
+  --color-primary-light: #FFF1EB;
+  
+  --color-cream: #F8F9FA;
+  
+  --color-dark: #1C2434;
+  --color-dark-muted: #64748B;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-dark);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Horizontal scrollbar'ni yashirish (Kategoriyalar uchun) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

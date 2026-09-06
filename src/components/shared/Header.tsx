@@ -1,0 +1,81 @@
+"use client";
+
+import { Menu, MapPin, User } from "lucide-react";
+import Link from "next/link";
+import { useUserStore } from "@/store/useUserStore";
+
+interface HeaderProps {
+    onOpenSidebar: () => void;
+    onOpenLocation?: () => void;
+}
+
+export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
+    const { user } = useUserStore();
+    
+    return (
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        
+        {/* Chap qism: Menyu va Logo */}
+        <div className="flex items-center gap-3">
+        <button
+        onClick={onOpenSidebar}
+        className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-800 transition-colors cursor-pointer"
+        aria-label="Menyu"
+        >
+        <Menu className="w-5 h-5" />
+        </button>
+        
+        {/* Naqtol Logosi (3D text-shadow dizayni bilan) */}
+        <Link href="/" className="flex items-center select-none group">
+        <span 
+        className="text-2xl font-black tracking-tight text-[#1a1a1c]"
+        style={{
+            textShadow: "0 1px 2px rgba(0, 0, 0, 0.3), 0 -1px 1px rgba(255, 255, 255, 0.9)",
+        }}
+        >
+        naqt
+        </span>
+        <span 
+        className="text-2xl font-black tracking-tight text-[#FF4D00]"
+        style={{
+            textShadow: "0 1px 2px rgba(0, 0, 0, 0.25), 0 -1px 1px rgba(255, 255, 255, 0.8)",
+        }}
+        >
+        ol
+        </span>
+        </Link>
+        </div>
+        
+        {/* Markaziy qism: Bosiladigan Lokatsiya tugmasi */}
+        <button 
+        onClick={onOpenLocation}
+        className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
+        >
+        <MapPin className="w-4 h-4 text-primary" />
+        <span>Toshkent sh.</span>
+        </button>
+        
+        {/* O'ng qism: Profil / Kabinet */}
+        <Link
+        href="/profile"
+        className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+        >
+        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs overflow-hidden">
+        {user?.avatar_url ? (
+            <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+        ) : user?.first_name ? (
+            user.first_name[0].toUpperCase()
+        ) : (
+            <User className="w-3.5 h-3.5" />
+        )}
+        </div>
+        <span className="text-xs font-semibold text-gray-800 hidden sm:inline">
+        {user?.first_name || "Kabinet"}
+        </span>
+        </Link>
+        
+        </div>
+        </header>
+    );
+};

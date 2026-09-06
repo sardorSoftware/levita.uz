@@ -1,7 +1,8 @@
-import "dotenv/config"; // <-- Mana shu qator hamma narsani hal qiladi
+import "dotenv/config";
+import { defineConfig } from "@prisma/config";
 
-export default {
+export default defineConfig({
     datasource: {
         url: process.env.DATABASE_URL,
     },
-};
+});
