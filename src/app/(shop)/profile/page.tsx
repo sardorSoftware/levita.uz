@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2 } from "lucide-react";
+import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,23 +16,28 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [successMessage, setSuccessMessage] = useState("");
+    const [isInTelegram, setIsInTelegram] = useState(false);
     
-    // Telegram WebApp orqali kirganda avto-sinxronizatsiya
+    // Bot username'ingizni shu yerga yozing (masalan: naqtol_bot)
+    const BOT_USERNAME = "naqtol_bot"; 
+    
     useEffect(() => {
         async function fetchUserData() {
             try {
                 if (typeof window !== "undefined") {
-                    // Agar foydalanuvchi ataylab "Hisobdan chiqish" qilgan bo'lsa, qaytadan avto-kirishni to'xtatamiz
                     const hasLoggedOut = sessionStorage.getItem("has_logged_out");
-                    if (hasLoggedOut === "true") {
-                        setIsFetching(false);
-                        return;
-                    }
-                    
                     const tg = (window as any).Telegram?.WebApp;
                     const tgUser = tg?.initDataUnsafe?.user;
                     
-                    if (tgUser && tgUser.id) {
+                    // 1. Telegram Mini App tekshiruvi
+                    if (tg && tg.initData && tgUser?.id) {
+                        setIsInTelegram(true);
+                        if (hasLoggedOut === "true") {
+                            setIsFetching(false);
+                            return;
+                        }
+                        
+                        // Bazadan foydalanuvchini tekshiramiz (telefon raqami bormi?)
                         const res = await fetch(`/api/auth/me?telegramId=${tgUser.id}`);
                         const data = await res.json();
                         
@@ -46,10 +51,8 @@ export default function ProfilePage() {
                                 avatar_url: tgUser.photo_url || "",
                                 phone: data.user.phone || "",
                             });
-                            setFirstName(data.user.firstName || tgUser.first_name || "");
-                            setLastName(data.user.lastName || tgUser.last_name || "");
-                            setPhone(data.user.phone || "");
                         } else {
+                            // Agar bazada hali bo'lmasa, vaqtincha Mini App ma'lumotlarini yozamiz
                             setUser({
                                 id: tgUser.id.toString(),
                                 telegramId: tgUser.id.toString(),
@@ -59,13 +62,20 @@ export default function ProfilePage() {
                                 avatar_url: tgUser.photo_url || "",
                                 phone: "",
                             });
-                            setFirstName(tgUser.first_name || "");
-                            setLastName(tgUser.last_name || "");
                         }
-                    } else if (user) {
-                        setFirstName(user.first_name || "");
-                        setLastName(user.last_name || "");
-                        setPhone(user.phone || "");
+                    } 
+                    // 2. Agar oddiy Web brauzerda bo'lsa va store'da oldindan user bo'lsa
+                    else if (user?.telegramId && hasLoggedOut !== "true") {
+                        const res = await fetch(`/api/auth/me?telegramId=${user.telegramId}`);
+                        const data = await res.json();
+                        if (data.success && data.user) {
+                            setUser({
+                                ...user,
+                                phone: data.user.phone || "",
+                                first_name: data.user.firstName || user.first_name,
+                                last_name: data.user.lastName || user.last_name,
+                            });
+                        }
                     }
                 }
             } catch (err) {
@@ -76,9 +86,9 @@ export default function ProfilePage() {
         }
         
         fetchUserData();
-    }, [setUser, user]);
+    }, [setUser]);
     
-    // Store o'zgarganda inputlarni yangilash
+    // Store o'zgarganda input inputlarni yangilash
     useEffect(() => {
         if (user) {
             setFirstName(user.first_name || "");
@@ -87,7 +97,6 @@ export default function ProfilePage() {
         }
     }, [user]);
     
-    // Ma'lumotlarni o'zgartirish va saqlash funksiyasi
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user?.telegramId) return;
@@ -125,7 +134,6 @@ export default function ProfilePage() {
     };
     
     const handleLogout = () => {
-        // Chiqish paytida sessionStorage'ga belgi qo'yamiz, shunda sahifa yangilanganda tgUser avtomatik kirmaydi
         if (typeof window !== "undefined") {
             sessionStorage.setItem("has_logged_out", "true");
         }
@@ -133,8 +141,14 @@ export default function ProfilePage() {
         router.push("/");
     };
     
+    // Web yoki Mini App'dan botga o'tib raqam tasdiqlash uchun yo'naltirish
+    const handleLoginRedirect = () => {
+        window.location.href = `https://t.me/${BOT_USERNAME}?start=auth`;
+    };
+    
     const avatarUrl = user?.avatar_url || "";
-    const isAuthorized = Boolean(user && user.telegramId);
+    // Tasdiqlangan deb hisoblash uchun telegramId hamda telefon raqam mavjud bo'lishi shart
+    const isAuthorized = Boolean(user && user.telegramId && user.phone);
     
     if (isFetching) {
         return (
@@ -175,10 +189,10 @@ export default function ProfilePage() {
         </div>
         <div className="overflow-hidden flex-1">
         <h2 className="font-bold text-dark text-base truncate">
-        {isAuthorized ? `${firstName} ${lastName}`.trim() : "Mehmon foydalanuvchi"}
+        {isAuthorized || firstName ? `${firstName} ${lastName}`.trim() : "Mehmon foydalanuvchi"}
         </h2>
         <p className="text-xs text-gray-500 truncate">
-        {user?.username ? `@${user.username}` : isAuthorized && user?.telegramId ? `ID: ${user.telegramId}` : "Tizimga kirilmagan"}
+        {user?.username ? `@${user.username}` : user?.telegramId ? `ID: ${user.telegramId}` : "Tizimga kirilmagan"}
         </p>
         </div>
         </div>
@@ -216,7 +230,7 @@ export default function ProfilePage() {
             </div>
             
             <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Telefon raqam (Botdan olingan)</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Telefon raqam</label>
             <div className="relative">
             <Phone className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
             <input
@@ -240,9 +254,18 @@ export default function ProfilePage() {
             </button>
             </form>
         ) : (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-center text-amber-800 text-xs space-y-1">
-            <p className="font-bold">Diqqat!</p>
-            <p>To'liq ma'lumotlarni ko'rish va buyurtma berish uchun Telegram botimizga kirib telefon raqamingizni yuboring.</p>
+            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl text-center space-y-3">
+            <p className="font-bold text-amber-900 text-sm">Tizimga kirish va raqamni tasdiqlash</p>
+            <p className="text-amber-700 text-xs">
+            Buyurtmalarni kuzatish va shaxsiy kabinetdan to'liq foydalanish uchun Telegram botimiz orqali telefon raqamingizni yuboring.
+            </p>
+            <button
+            onClick={handleLoginRedirect}
+            className="w-full py-3 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+            >
+            <Send className="w-4 h-4" />
+            <span>Telegram orqali kirish / Tasdiqlash</span>
+            </button>
             </div>
         )}
         
