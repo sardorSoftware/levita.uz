@@ -59,8 +59,9 @@ model Product {
 
 model Order {
   id        String      @id @default(cuid())
-  userId    String?     // <-- O'zgartirildi: ixtiyoriy (optional) qilindi
-  user      User?       @relation(fields: [userId], references: [id]) // <-- O'zgartirildi: user ham optional bo'ldi
+  userId    String?     
+  user      User?       @relation(fields: [userId], references: [id])
+  name      String?     // <-- Mana bu qo'shildi (mijoz ismi uchun)
   items     OrderItem[]
   total     Float
   status    OrderStatus @default(PENDING)
