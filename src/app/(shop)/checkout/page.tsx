@@ -7,8 +7,12 @@ import Link from "next/link";
 
 export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore();
+    
+    // Yangi Ism state'i qo'shildi
+    const [name, setName] = useState("");
     const [phone, setPhone] = useState("+998 ");
     const [address, setAddress] = useState("");
+    
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     
@@ -19,25 +23,44 @@ export default function CheckoutPage() {
         if (items.length === 0) return;
         
         setLoading(true);
+        
+        // Botimiz kutayotgan JSON formatdagi ma'lumot
+        const orderPayload = {
+            name: name,
+            phone: phone,
+            address: address,
+            items: items.map(item => ({
+                name: item.title,      // Agar sizda item.name bo'lsa, shunga o'zgartiring
+                price: item.price,
+                quantity: item.quantity
+            })),
+            total: totalAmount
+        };
+        
         try {
-            const res = await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    // userId ni hozircha vaqtincha olib tashlaymiz yoki real user bo'lsa beramiz
-                    phone,
-                    address,
-                    items,
-                    total: totalAmount,
-                }),
-            });
-            
-            if (res.ok) {
+            // Agar sayt Telegram ichida Mini App sifatida ochilgan bo'lsa
+            // @ts-ignore (TypeScript Telegram obyektini tanishi uchun)
+            if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+                // @ts-ignore
+                window.Telegram.WebApp.sendData(JSON.stringify(orderPayload));
+                
                 clearCart();
                 setSuccess(true);
             } else {
-                const errorData = await res.json();
-                alert("Xatolik: " + (errorData.error || "Qaytadan urinib ko'ring."));
+                // Agar sayt oddiy brauzerda ochilgan bo'lsa (Zaxira uchun API qoldirildi)
+                const res = await fetch("/api/orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(orderPayload),
+                });
+                
+                if (res.ok) {
+                    clearCart();
+                    setSuccess(true);
+                } else {
+                    const errorData = await res.json();
+                    alert("Xatolik: " + (errorData.error || "Qaytadan urinib ko'ring."));
+                }
             }
         } catch (err) {
             alert("Tarmoqda xatolik yuz berdi.");
@@ -52,7 +75,7 @@ export default function CheckoutPage() {
             <CheckCircle2 className="w-16 h-16 text-green-500 mb-4 animate-in zoom-in duration-300" />
             <h2 className="text-2xl font-bold text-dark mb-2">Buyurtmangiz qabul qilindi!</h2>
             <p className="text-sm text-gray-500 max-w-xs mb-6">
-            Tez orada operatorlarimiz siz bilan bog'lanishadi.
+            Tasdiq cheki Telegram orqali yuborildi.
             </p>
             <Link
             href="/"
@@ -93,6 +116,21 @@ export default function CheckoutPage() {
         </div>
         
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-4">
+        {/* ISM KIRITISH MAYDONI */}
+        <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">
+        Ismingiz *
+        </label>
+        <input
+        type="text"
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Masalan: Sardor"
+        className="w-full bg-cream border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-dark focus:outline-none focus:border-primary transition-colors"
+        />
+        </div>
+        
         <div>
         <label className="block text-xs font-semibold text-gray-600 mb-1">
         Telefon raqamingiz *
