@@ -105,7 +105,7 @@ export async function POST(req: Request) {
                     data: {
                         phone: phone,
                         telegramId: telegramId ? BigInt(telegramId) : null,
-                        first_name: name || "Mijoz",
+                        firstName: name || "Mijoz", // <-- To'g'irlandi: first_name o'rniga firstName
                     }
                 });
                 resolvedUserId = newUser.id;
