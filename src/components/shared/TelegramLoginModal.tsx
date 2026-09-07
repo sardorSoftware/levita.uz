@@ -20,12 +20,8 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
         // Oldingi yozilgan widgetni tozalash (qayta-qayta chiqavermasligi uchun)
         containerRef.current.innerHTML = "";
         
-        const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME;
-        
-        if (!botUsername) {
-            console.error("Bot username topilmadi! .env faylni tekshiring.");
-            return;
-        }
+        // .env o'rniga to'g'ridan-to'g'ri botingiz usernameni yozamiz (xatolikni 100% yo'qotadi)
+        const botUsername = "naqtol_bot";
         
         // Tizimga muvaffaqiyatli kirilganda ishlaydigan global funksiya
         (window as any).onTelegramAuth = (user: any) => {
@@ -66,7 +62,7 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
         <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
         <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors"
+        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
         >
         <X className="w-5 h-5" />
         </button>

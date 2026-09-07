@@ -24,24 +24,22 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         if (typeof window !== "undefined") {
             const tg = (window as any).Telegram?.WebApp;
             
-            if (tg) {
-                tg.ready();
-                const tgUser = tg.initDataUnsafe?.user;
+            if (tg && tg.initDataUnsafe?.user) {
+                const tgUser = tg.initDataUnsafe.user;
+                setIsWebApp(true);
                 
-                if (tgUser) {
-                    setIsWebApp(true);
-                    
-                    // Agar store'da foydalanuvchi bo'lmasa, Mini App ma'lumotlari bilan to'ldiramiz
-                    if (!user) {
-                        setUser({
-                            id: tgUser.id,
-                            telegramId: tgUser.id.toString(),
-                            first_name: tgUser.first_name,
-                            last_name: tgUser.last_name || "",
-                            username: tgUser.username || "",
-                            avatar_url: tgUser.photo_url || "",
-                        });
-                    }
+                tg.ready();
+                
+                // Agar store'da foydalanuvchi bo'lmasa, Mini App ma'lumotlari bilan to'ldiramiz
+                if (!user) {
+                    setUser({
+                        id: tgUser.id,
+                        telegramId: tgUser.id.toString(),
+                        first_name: tgUser.first_name,
+                        last_name: tgUser.last_name || "",
+                        username: tgUser.username || "",
+                        avatar_url: tgUser.photo_url || "",
+                    });
                 }
             }
         }
@@ -54,10 +52,15 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     
     // Profil tugmasi bosilganda xulq-atvorni boshqarish
     const handleProfileClick = (e: React.MouseEvent) => {
-        // Faqat foydalanuvchi kirmagan bo'lsa va u oddiy Veb-sayt brauzerida bo'lsa modal ochiladi
-        if (!user && !isWebApp) {
-            e.preventDefault();
-            setIsAuthModalOpen(true);
+        // Agar foydalanuvchi tizimga kirmagan bo'lsa
+        if (!user) {
+            // Agar Telegram Mini App ichida bo'lmasa, veb uchun login modalni ochamiz
+            if (!isWebApp) {
+                e.preventDefault();
+                setIsAuthModalOpen(true);
+            }
+            // Agar Mini App ichida bo'lsa-yu, hali user yuklanmagan bo'lsa, 
+            // oddiygina profil sahifasiga o'tishiga ruxsat beramiz (u yerda o'zi ushlab oladi)
         }
     };
     
