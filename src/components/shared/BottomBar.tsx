@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag, Grid } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 
@@ -9,7 +10,13 @@ interface BottomBarProps {
 }
 
 export const BottomBar = ({ onOpenCategories }: BottomBarProps) => {
+    const pathname = usePathname();
     const { items, totalPrice } = useCartStore();
+    
+    // Agar buyurtmalar sahifasida bo'lsak, pastdagi savatcha paneli ko'rsatilmasin
+    if (pathname === "/orders") {
+        return null;
+    }
     
     const totalItemsCount = items.reduce((acc, item) => acc + item.quantity, 0);
     

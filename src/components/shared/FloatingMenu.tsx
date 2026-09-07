@@ -1,10 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { MessageCircle, HelpCircle, Share2, Plus, X } from "lucide-react";
 
 export function FloatingMenu() {
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    
+    // Agar buyurtmalar sahifasida bo'lsak, floating menu ko'rsatilmasin
+    if (pathname === "/orders") {
+        return null;
+    }
     
     const toggleMenu = () => setIsOpen(!isOpen);
     
