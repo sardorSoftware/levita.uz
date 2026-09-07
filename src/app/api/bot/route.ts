@@ -1,44 +1,99 @@
 import { NextResponse } from "next/server";
-import { sendTelegramNotification } from "@/lib/telegram";
+import { prisma } from "@/lib/prisma";
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 export async function POST(req: Request) {
     try {
-        const update = await req.json();
+        const body = await req.json();
+        const message = body.message;
         
-        // Telegram /start buyrug'iga javob berish
-        if (update.message && update.message.text === "/start") {
-            const chatId = update.message.chat.id;
-            const firstName = update.message.from.first_name || "Foydalanuvchi";
-            
-            const welcomeText = `Assalomu alaykum, <b>${firstName}</b>!\n\n<b>Naqtol</b> do'konimizga xush kelibsiz. Quyidagi tugma orqali katalog va mahsulotlarni ko'rishingiz mumkin:`;
-            
-            const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || "https://naqtol.uz";
-            
-            // Telegram Bot API orqali Inline Keyboard va Web App tugmasini yuborish
-            await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: welcomeText,
-                    parse_mode: "HTML",
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                {
-                                    text: "🛍 Do'konni ochish",
-                                    web_app: { url: webAppUrl },
-                                },
-                            ],
-                        ],
-                    },
-                }),
-            });
+        if (!message) {
+            return NextResponse.json({ status: "ok" });
         }
         
-        return NextResponse.json({ ok: true });
+        const chatId = message.chat.id;
+        const telegramId = BigInt(message.from.id);
+        const firstName = message.from.first_name || "Mijoz";
+        const lastName = message.from.last_name || null;
+        const username = message.from.username || null;
+        const text = message.text;
+        
+        // 1. Agar foydalanuvchi /start ni bossa
+        if (text === "/start" || text === "/start auth") {
+            await sendContactRequest(chatId, firstName);
+            return NextResponse.json({ status: "ok" });
+        }
+        
+        // 2. Agar foydalanuvchi o'z kontaktini (telefon raqamini) yuborsa
+        if (message.contact) {
+            const phone = message.contact.phone_number;
+            
+            // Supabase bazasiga saqlash yoki yangilash (Upsert)
+            await prisma.user.upsert({
+                where: { telegramId },
+                update: {
+                    firstName,
+                    lastName,
+                    username,
+                    phone,
+                },
+                create: {
+                    telegramId,
+                    firstName,
+                    lastName,
+                    username,
+                    phone,
+                },
+            });
+            
+            // Foydalanuvchiga muvaffaqiyatli ro'yxatdan o'tganini bildirish va Mini App ochish tugmasini berish
+            await sendMessageWithWebApp(chatId, "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\nEndi pastdagi tugma orqali do'konga o'tishingiz mumkin.");
+            return NextResponse.json({ status: "ok" });
+        }
+        
+        return NextResponse.json({ status: "ok" });
     } catch (error) {
-        console.error("Telegram Webhook xatoligi:", error);
-        return NextResponse.json({ ok: false, error: "Internal Server Error" }, { status: 500 });
+        console.error("BOT ERROR:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
+}
+
+// Telefon raqamni so'rovchi tugmani yuborish funksiyasi
+async function sendContactRequest(chatId: number, name: string) {
+    await fetch(`${TELEGRAM_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text: `Assalomu alaykum, ${name}!\n\nNAQTOL xizmatidan foydalanish va buyurtmalarni kuzatish uchun iltimos, pastdagi **"Telefon raqamni yuborish"** tugmasini bosing.`,
+            reply_markup: {
+                keyboard: [
+                    [{ text: "📞 Telefon raqamni yuborish", request_contact: true }]
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: true,
+            },
+        }),
+    });
+}
+
+// Mini App ochish tugmasini yuborish funksiyasi
+async function sendMessageWithWebApp(chatId: number, text: string) {
+    const webAppUrl = process.env.NEXT_PUBLIC_WEB_APP_URL || "https://sizning-domen.uz"; // Vercel yoki sayt manzilingiz
+    
+    await fetch(`${TELEGRAM_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text,
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🛍 Do'konni ochish", web_app: { url: webAppUrl } }]
+                ],
+            },
+        }),
+    });
 }
