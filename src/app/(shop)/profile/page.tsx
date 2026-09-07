@@ -22,6 +22,13 @@ export default function ProfilePage() {
         async function fetchUserData() {
             try {
                 if (typeof window !== "undefined") {
+                    // Agar foydalanuvchi ataylab "Hisobdan chiqish" qilgan bo'lsa, qaytadan avto-kirishni to'xtatamiz
+                    const hasLoggedOut = sessionStorage.getItem("has_logged_out");
+                    if (hasLoggedOut === "true") {
+                        setIsFetching(false);
+                        return;
+                    }
+                    
                     const tg = (window as any).Telegram?.WebApp;
                     const tgUser = tg?.initDataUnsafe?.user;
                     
@@ -118,6 +125,10 @@ export default function ProfilePage() {
     };
     
     const handleLogout = () => {
+        // Chiqish paytida sessionStorage'ga belgi qo'yamiz, shunda sahifa yangilanganda tgUser avtomatik kirmaydi
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("has_logged_out", "true");
+        }
         logout();
         router.push("/");
     };
