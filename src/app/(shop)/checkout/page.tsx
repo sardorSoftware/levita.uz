@@ -8,7 +8,6 @@ import Link from "next/link";
 export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore();
     
-    // Yangi Ism state'i qo'shildi
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("+998 ");
     const [address, setAddress] = useState("");
@@ -24,13 +23,12 @@ export default function CheckoutPage() {
         
         setLoading(true);
         
-        // Botimiz kutayotgan JSON formatdagi ma'lumot
         const orderPayload = {
             name: name,
             phone: phone,
             address: address,
             items: items.map(item => ({
-                name: item.title,      // Agar sizda item.name bo'lsa, shunga o'zgartiring
+                name: item.title,
                 price: item.price,
                 quantity: item.quantity
             })),
@@ -38,16 +36,24 @@ export default function CheckoutPage() {
         };
         
         try {
-            // Agar sayt Telegram ichida Mini App sifatida ochilgan bo'lsa
-            // @ts-ignore (TypeScript Telegram obyektini tanishi uchun)
-            if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+            // Telegram WebApp muhitida ekanligini tekshiramiz
+            // @ts-ignore
+            if (typeof window !== "undefined" && window.Telegram?.WebApp?.initData) {
                 // @ts-ignore
-                window.Telegram.WebApp.sendData(JSON.stringify(orderPayload));
+                const tg = window.Telegram.WebApp;
+                
+                // Botga ma'lumotni yuborish
+                tg.sendData(JSON.stringify(orderPayload));
                 
                 clearCart();
                 setSuccess(true);
+                
+                // 1 sekunddan keyin Mini App oynasini yopish
+                setTimeout(() => {
+                    tg.close();
+                }, 1200);
             } else {
-                // Agar sayt oddiy brauzerda ochilgan bo'lsa (Zaxira uchun API qoldirildi)
+                // Agar oddiy brauzerda test qilinayotgan bo'lsa
                 const res = await fetch("/api/orders", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -63,7 +69,7 @@ export default function CheckoutPage() {
                 }
             }
         } catch (err) {
-            alert("Tarmoqda xatolik yuz berdi.");
+            alert("Tarmoqda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
         } finally {
             setLoading(false);
         }
@@ -75,7 +81,7 @@ export default function CheckoutPage() {
             <CheckCircle2 className="w-16 h-16 text-green-500 mb-4 animate-in zoom-in duration-300" />
             <h2 className="text-2xl font-bold text-dark mb-2">Buyurtmangiz qabul qilindi!</h2>
             <p className="text-sm text-gray-500 max-w-xs mb-6">
-            Tasdiq cheki Telegram orqali yuborildi.
+            Tasdiq cheki Telegram botingizga yuborildi.
             </p>
             <Link
             href="/"
@@ -116,11 +122,8 @@ export default function CheckoutPage() {
         </div>
         
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-4">
-        {/* ISM KIRITISH MAYDONI */}
         <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">
-        Ismingiz *
-        </label>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">Ismingiz *</label>
         <input
         type="text"
         required
@@ -132,9 +135,7 @@ export default function CheckoutPage() {
         </div>
         
         <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">
-        Telefon raqamingiz *
-        </label>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">Telefon raqamingiz *</label>
         <input
         type="text"
         required
@@ -152,15 +153,13 @@ export default function CheckoutPage() {
         </div>
         
         <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">
-        Yetkazib berish manzili *
-        </label>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">Yetkazib berish manzili *</label>
         <textarea
         required
         rows={3}
         value={address}
         onChange={(e) => setAddress(e.target.value)}
-        placeholder="Toshkent sh., Chilonzor tumani, 10-mavze..."
+        placeholder="Toshkent sh., Chilonzor tumani..."
         className="w-full bg-cream border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-dark focus:outline-none focus:border-primary transition-colors resize-none"
         />
         </div>
