@@ -27,6 +27,7 @@ export const useUserStore = create<UserState>()(
         }),
         {
             name: "naqtol-user-storage",
+            
         }
     )
 );
