@@ -6,8 +6,9 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const telegramIdStr = searchParams.get("telegramId");
         
-        if (!telegramIdStr) {
-            return NextResponse.json({ success: false, error: "Telegram ID topilmadi" }, { status: 400 });
+        // Agar telegramId kelmasa yoki bo'sh bo'lsa, 400 emas, oddiygina success: false qaytaramiz
+        if (!telegramIdStr || telegramIdStr === "undefined" || telegramIdStr === "null") {
+            return NextResponse.json({ success: false, error: "Telegram ID topilmadi" }, { status: 200 });
         }
         
         const telegramId = BigInt(telegramIdStr);
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
         });
         
         if (!user) {
-            return NextResponse.json({ success: false, error: "Foydalanuvchi topilmadi" }, { status: 404 });
+            return NextResponse.json({ success: false, error: "Foydalanuvchi topilmadi" }, { status: 200 });
         }
         
         return NextResponse.json({
