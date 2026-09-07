@@ -5,7 +5,7 @@ import { sendTelegramNotification } from "@/lib/telegram";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { userId, phone, address, items, total } = body;
+        const { userId, telegramId, phone, address, items, total } = body;
         
         if (!phone || !address || !items || !Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: "Buyurtma ma'lumotlari to'liq emas" }, { status: 400 });
@@ -13,7 +13,6 @@ export async function POST(req: Request) {
         
         const safeTotal = typeof total === "number" ? total : 0;
         
-        // Bazaga saqlash uchun obyekt
         const orderData: any = {
             phone,
             address,
@@ -27,12 +26,37 @@ export async function POST(req: Request) {
             },
         };
         
-        // Agar haqiqiy bazadagi user ID kelgan bo'lsagina va u demo bo'lmasa bog'laymiz
-        if (userId && typeof userId === "string" && userId !== "clx_user_demo" && userId !== "guest_user") {
-            // Avval bazada bunaqa user borligini tekshiramiz
-            const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+        let resolvedUserId = userId;
+        
+        // 1. Agar to'g'ri userId kelgan bo'lsa
+        if (resolvedUserId && typeof resolvedUserId === "string" && resolvedUserId !== "clx_user_demo" && resolvedUserId !== "guest_user") {
+            const existingUser = await prisma.user.findUnique({ where: { id: resolvedUserId } });
             if (existingUser) {
-                orderData.userId = userId;
+                orderData.userId = resolvedUserId;
+            }
+        }
+        
+        // 2. Agar userId bo'lmasa, lekin telegramId kelgan bo'lsa, bazadan topamiz
+        if (!orderData.userId && telegramId) {
+            try {
+                const tgUser = await prisma.user.findFirst({
+                    where: { telegramId: BigInt(telegramId) }
+                });
+                if (tgUser) {
+                    orderData.userId = tgUser.id;
+                }
+            } catch (e) {
+                console.log("TelegramId lookup error:", e);
+            }
+        }
+        
+        // 3. Agar hali ham userId topilmasa, kiritilgan telefon raqami bo'yicha foydalanuvchini qidirib bog'laymiz
+        if (!orderData.userId && phone) {
+            const phoneUser = await prisma.user.findFirst({
+                where: { phone: phone }
+            });
+            if (phoneUser) {
+                orderData.userId = phoneUser.id;
             }
         }
         

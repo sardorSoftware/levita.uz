@@ -23,12 +23,29 @@ export default function CheckoutPage() {
         
         setLoading(true);
         
+        // 1. Telefon raqamini localStorage ga saqlab qo'yamiz (Buyurtmalarim sahifasi topishi uchun muhim!)
+        if (phone && phone.trim() !== "+998") {
+            localStorage.setItem("user_phone", phone.trim());
+        }
+        
+        // Telegramdan kelgan user ID yoki telegramId ni aniqlab olamiz (agar Mini App bo'lsa)
+        let telegramId = null;
+        if (typeof window !== "undefined") {
+            // @ts-ignore
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            if (tgUser?.id) {
+                telegramId = tgUser.id;
+            }
+        }
+        
         const orderPayload = {
             name: name,
             phone: phone,
             address: address,
+            telegramId: telegramId,
             items: items.map(item => ({
-                name: item.title,
+                id: item.id, // API da productId uchun item.id kerak bo'ladi
+                title: item.title,
                 price: item.price,
                 quantity: item.quantity
             })),
@@ -36,39 +53,29 @@ export default function CheckoutPage() {
         };
         
         try {
-            // Telegram WebApp muhitida ekanligini tekshiramiz
-            // @ts-ignore
-            if (typeof window !== "undefined" && window.Telegram?.WebApp?.initData) {
+            // 2. Har doim bazaga yozish uchun /api/orders ga POST so'rov yuboramiz
+            const res = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderPayload),
+            });
+            
+            if (res.ok) {
+                // 3. Agar Telegram WebApp bo'lsa, qo'shimcha ravishda botga ham sendData qilamiz
                 // @ts-ignore
-                const tg = window.Telegram.WebApp;
-                
-                // Botga ma'lumotni yuborish
-                tg.sendData(JSON.stringify(orderPayload));
+                if (typeof window !== "undefined" && window.Telegram?.WebApp?.initData) {
+                    // @ts-ignore
+                    window.Telegram.WebApp.sendData(JSON.stringify(orderPayload));
+                }
                 
                 clearCart();
                 setSuccess(true);
-                
-                // 1 sekunddan keyin Mini App oynasini yopish
-                setTimeout(() => {
-                    tg.close();
-                }, 1200);
             } else {
-                // Agar oddiy brauzerda test qilinayotgan bo'lsa
-                const res = await fetch("/api/orders", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(orderPayload),
-                });
-                
-                if (res.ok) {
-                    clearCart();
-                    setSuccess(true);
-                } else {
-                    const errorData = await res.json();
-                    alert("Xatolik: " + (errorData.error || "Qaytadan urinib ko'ring."));
-                }
+                const errorData = await res.json();
+                alert("Xatolik: " + (errorData.error || "Qaytadan urinib ko'ring."));
             }
         } catch (err) {
+            console.error("Checkout error:", err);
             alert("Tarmoqda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
         } finally {
             setLoading(false);
