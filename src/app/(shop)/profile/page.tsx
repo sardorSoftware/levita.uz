@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User, CheckCircle2, Save } from "lucide-react";
+import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -14,18 +14,18 @@ export default function ProfilePage() {
     const [lastName, setLastName] = useState("");
     const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
     const [successMessage, setSuccessMessage] = useState("");
     
-    // 1. Telegram WebApp orqali kirganda avto-sinxronizatsiya va bazadan ma'lumotni tortish
+    // Telegram WebApp orqali kirganda avto-sinxronizatsiya
     useEffect(() => {
         async function fetchUserData() {
-            if (typeof window !== "undefined") {
-                const tg = (window as any).Telegram?.WebApp;
-                const tgUser = tg?.initDataUnsafe?.user;
-                
-                if (tgUser) {
-                    try {
-                        // Backenddan bazadagi to'liq ma'lumotlarni (telefon raqam va h.k.) olib kelamiz
+            try {
+                if (typeof window !== "undefined") {
+                    const tg = (window as any).Telegram?.WebApp;
+                    const tgUser = tg?.initDataUnsafe?.user;
+                    
+                    if (tgUser && tgUser.id) {
                         const res = await fetch(`/api/auth/me?telegramId=${tgUser.id}`);
                         const data = await res.json();
                         
@@ -33,21 +33,20 @@ export default function ProfilePage() {
                             setUser({
                                 id: data.user.id,
                                 telegramId: data.user.telegramId.toString(),
-                                first_name: data.user.firstName,
-                                last_name: data.user.lastName || "",
+                                first_name: data.user.firstName || tgUser.first_name,
+                                last_name: data.user.lastName || tgUser.last_name || "",
                                 username: data.user.username || tgUser.username || "",
                                 avatar_url: tgUser.photo_url || "",
                                 phone: data.user.phone || "",
                             });
-                            setFirstName(data.user.firstName || "");
-                            setLastName(data.user.lastName || "");
+                            setFirstName(data.user.firstName || tgUser.first_name || "");
+                            setLastName(data.user.lastName || tgUser.last_name || "");
                             setPhone(data.user.phone || "");
                         } else {
-                            // Bazada hali bo'lmasa Telegram'dagi boshlang'ich ma'lumotni qo'yamiz
                             setUser({
-                                id: tgUser.id,
+                                id: tgUser.id.toString(),
                                 telegramId: tgUser.id.toString(),
-                                first_name: tgUser.first_name,
+                                first_name: tgUser.first_name || "Mijoz",
                                 last_name: tgUser.last_name || "",
                                 username: tgUser.username || "",
                                 avatar_url: tgUser.photo_url || "",
@@ -56,23 +55,32 @@ export default function ProfilePage() {
                             setFirstName(tgUser.first_name || "");
                             setLastName(tgUser.last_name || "");
                         }
-                    } catch (err) {
-                        console.error("Auth sync error:", err);
+                    } else if (user) {
+                        setFirstName(user.first_name || "");
+                        setLastName(user.last_name || "");
+                        setPhone(user.phone || "");
                     }
                 }
+            } catch (err) {
+                console.error("Auth sync error:", err);
+            } finally {
+                setIsFetching(false);
             }
         }
         
-        if (!user) {
-            fetchUserData();
-        } else {
+        fetchUserData();
+    }, [setUser, user]);
+    
+    // Store o'zgarganda inputlarni yangilash
+    useEffect(() => {
+        if (user) {
             setFirstName(user.first_name || "");
             setLastName(user.last_name || "");
             setPhone(user.phone || "");
         }
-    }, [user, setUser]);
+    }, [user]);
     
-    // 2. Ma'lumotlarni o'zgartirish va saqlash funksiyasi
+    // Ma'lumotlarni o'zgartirish va saqlash funksiyasi
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user?.telegramId) return;
@@ -115,14 +123,23 @@ export default function ProfilePage() {
     };
     
     const avatarUrl = user?.avatar_url || "";
+    const isAuthorized = Boolean(user && user.telegramId);
+    
+    if (isFetching) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-gray-500">Ma'lumotlar yuklanmoqda...</p>
+            </div>
+        );
+    }
     
     return (
         <div className="max-w-xl mx-auto px-4 pt-4 pb-24 space-y-4">
         <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-dark">Shaxsiy kabinet</h1>
         
-        {/* Burchakdagi xavfsizlik va tasdiqlangan belgisi */}
-        {user ? (
+        {isAuthorized ? (
             <div className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold border border-green-200 shadow-xs">
             <ShieldCheck className="w-4 h-4" />
             <span>Tasdiqlangan</span>
@@ -142,20 +159,19 @@ export default function ProfilePage() {
         ) : firstName ? (
             firstName[0].toUpperCase()
         ) : (
-            <User className="w-7 h-7" />
+            <UserIcon className="w-7 h-7" />
         )}
         </div>
         <div className="overflow-hidden flex-1">
         <h2 className="font-bold text-dark text-base truncate">
-        {user ? `${firstName} ${lastName}`.trim() : "Mehmon foydalanuvchi"}
+        {isAuthorized ? `${firstName} ${lastName}`.trim() : "Mehmon foydalanuvchi"}
         </h2>
         <p className="text-xs text-gray-500 truncate">
-        {user?.username ? `@${user.username}` : user ? `ID: ${user.telegramId}` : "Tizimga kirilmagan"}
+        {user?.username ? `@${user.username}` : isAuthorized && user?.telegramId ? `ID: ${user.telegramId}` : "Tizimga kirilmagan"}
         </p>
         </div>
         </div>
         
-        {/* Muvaffaqiyat xabari */}
         {successMessage && (
             <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 p-3 rounded-2xl text-sm border border-emerald-100 animate-fadeIn">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -163,8 +179,7 @@ export default function ProfilePage() {
             </div>
         )}
         
-        {/* Ma'lumotlarni tahrirlash formasi (Agar foydalanuvchi kirgan bo'lsa chiqadi) */}
-        {user ? (
+        {isAuthorized ? (
             <form onSubmit={handleUpdate} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-sm font-bold text-dark">Ma'lumotlarni yangilash</h2>
             
@@ -220,7 +235,6 @@ export default function ProfilePage() {
             </div>
         )}
         
-        {/* Menyu elementlari */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
         <Link
         href="/orders"
@@ -255,8 +269,7 @@ export default function ProfilePage() {
         </Link>
         </div>
         
-        {/* Chiqish */}
-        {user && (
+        {isAuthorized && (
             <button
             onClick={handleLogout}
             className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
