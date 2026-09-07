@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 
 export default function CartPage() {
+    const pathname = usePathname();
     const { items, updateQuantity, removeItem, getTotalPrice, totalPrice } = useCartStore();
     
     // Store'dagi metod nomiga qarab umumiy summani xavfsiz hisoblash
@@ -26,7 +28,7 @@ export default function CartPage() {
             </div>
             <h2 className="text-lg font-bold text-dark mb-2">Savatchangiz bo'sh</h2>
             <p className="text-sm text-gray-500 mb-6">Xaridni boshlash uchun mahsulotlarni savatga qo'shing.</p>
-            <Link href="/" className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors">
+            <Link href="/" className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer">
             Do'konga qaytish
             </Link>
             </div>

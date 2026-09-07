@@ -2,6 +2,7 @@
 
 import { Menu, MapPin, User } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 
 interface HeaderProps {
@@ -10,7 +11,13 @@ interface HeaderProps {
 }
 
 export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
+    const pathname = usePathname();
     const { user } = useUserStore();
+    
+    // Agar buyurtmalar sahifasida bo'lsak, header ko'rsatilmasin
+    if (pathname === "/orders") {
+        return null;
+    }
     
     return (
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3">
