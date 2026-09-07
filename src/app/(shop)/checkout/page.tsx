@@ -21,14 +21,23 @@ export default function CheckoutPage() {
         e.preventDefault();
         if (items.length === 0) return;
         
-        setLoading(true);
-        
-        // 1. Telefon raqamini localStorage ga saqlab qo'yamiz (Buyurtmalarim sahifasi topishi uchun muhim!)
-        if (phone && phone.trim() !== "+998") {
-            localStorage.setItem("user_phone", phone.trim());
+        // Telefon raqam va manzil to'ldirilganini tekshirish
+        if (!phone || phone.trim() === "+998" || phone.trim().length < 9) {
+            alert("Iltimos, telefon raqamingizni to'liq kiriting!");
+            return;
         }
         
-        // Telegramdan kelgan user ID yoki telegramId ni aniqlab olamiz (agar Mini App bo'lsa)
+        if (!address.trim()) {
+            alert("Iltimos, yetkazib berish manzilini kiriting!");
+            return;
+        }
+        
+        setLoading(true);
+        
+        // Telefon raqamini localStorage ga saqlab qo'yamiz (Buyurtmalarim sahifasi topishi uchun)
+        localStorage.setItem("user_phone", phone.trim());
+        
+        // Telegramdan kelgan telegramId ni aniqlab olamiz
         let telegramId = null;
         if (typeof window !== "undefined") {
             // @ts-ignore
@@ -39,12 +48,12 @@ export default function CheckoutPage() {
         }
         
         const orderPayload = {
-            name: name,
-            phone: phone,
-            address: address,
+            name: name.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
             telegramId: telegramId,
             items: items.map(item => ({
-                id: item.id, // API da productId uchun item.id kerak bo'ladi
+                id: item.id,
                 title: item.title,
                 price: item.price,
                 quantity: item.quantity
@@ -53,7 +62,6 @@ export default function CheckoutPage() {
         };
         
         try {
-            // 2. Har doim bazaga yozish uchun /api/orders ga POST so'rov yuboramiz
             const res = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -61,7 +69,6 @@ export default function CheckoutPage() {
             });
             
             if (res.ok) {
-                // 3. Agar Telegram WebApp bo'lsa, qo'shimcha ravishda botga ham sendData qilamiz
                 // @ts-ignore
                 if (typeof window !== "undefined" && window.Telegram?.WebApp?.initData) {
                     // @ts-ignore

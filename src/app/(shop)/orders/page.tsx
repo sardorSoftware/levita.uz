@@ -6,14 +6,18 @@ import { ArrowLeft, Package, Clock, CheckCircle, XCircle } from "lucide-react";
 
 interface OrderItem {
     id: string;
-    name: string;
     quantity: number;
     price: number;
+    product?: {
+        title?: string;
+        image?: string;
+    };
+    name?: string;
 }
 
 interface Order {
     id: string;
-    name: string;
+    name?: string;
     phone: string;
     address: string;
     total: number;
@@ -33,7 +37,6 @@ export default function OrdersPage() {
                 let phone = localStorage.getItem("user_phone") || "";
                 let telegramId = "";
                 
-                // Telegram WebApp obyektini xavfsiz o'qib olamiz
                 if (typeof window !== "undefined") {
                     // @ts-ignore
                     const tg = window.Telegram?.WebApp;
@@ -47,7 +50,6 @@ export default function OrdersPage() {
                     }
                 }
                 
-                // Agar ikkalasi ham bo'lmasa, serverga so'rov yuborib vaqt yo'qotmaymiz
                 if (!phone && !telegramId) {
                     setLoading(false);
                     return;
@@ -57,11 +59,9 @@ export default function OrdersPage() {
                 if (phone) params.append("phone", phone);
                 if (telegramId) params.append("telegramId", telegramId);
                 
-                // API manzili: Agar loyihangizda /api/orders bo'lsa, shuni ishlatamiz
                 const res = await fetch(`/api/orders?${params.toString()}`);
                 const data = await res.json();
                 
-                // Backend array yoki { success: true, orders: [] } qaytarishiga qarab tekshiramiz
                 if (Array.isArray(data)) {
                     setOrders(data);
                 } else if (data.success && Array.isArray(data.orders)) {
@@ -78,7 +78,7 @@ export default function OrdersPage() {
     }, []);
     
     const getStatusBadge = (status: string) => {
-        switch (status) {
+        switch (status?.toUpperCase()) {
             case "PENDING":
             return <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-semibold"><Clock className="w-3.5 h-3.5" /> Kutilmoqda</span>;
             case "COMPLETED":
@@ -100,7 +100,7 @@ export default function OrdersPage() {
     
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
-        <div className="bg-white sticky top-0 z-20 border-b border-gray-100 px-4 py-4 flex items-center justify-between">
+        <div className="bg-white sticky top-0 z-20 border-b border-gray-100 px-4 py-4 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
         <Link href="/" className="p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
         <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -153,7 +153,7 @@ export default function OrdersPage() {
                 ) : (
                     <div className="space-y-4">
                     {filteredOrders.map((order) => (
-                        <div key={order.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                        <div key={order.id} className="bg-white rounded-2xl p-4 shadow-xs border border-gray-100">
                         <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
                         <span className="text-xs font-medium text-gray-500">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString("uz-UZ", {
@@ -166,21 +166,41 @@ export default function OrdersPage() {
                         {getStatusBadge(order.status)}
                         </div>
                         
-                        <div className="space-y-2 mb-3">
-                        {order.items && order.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-sm">
-                            <span className="text-gray-800 font-medium">
-                            {item.name} <span className="text-gray-400 text-xs">x{item.quantity}</span>
-                            </span>
-                            <span className="text-gray-900 font-semibold">
-                            {(item.price * item.quantity).toLocaleString("uz-UZ")} UZS
-                            </span>
-                            </div>
-                        ))}
+                        <div className="space-y-3 mb-3">
+                        {order.items && order.items.map((item, idx) => {
+                            const productName = item.product?.title || item.name || "Mahsulot";
+                            const productImage = item.product?.image;
+                            return (
+                                <div key={idx} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-none">
+                                {productImage ? (
+                                    <img 
+                                    src={productImage} 
+                                    alt={productName} 
+                                    className="w-12 h-12 object-cover rounded-xl border border-gray-100 shrink-0" 
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 shrink-0">
+                                    <Package className="w-6 h-6" />
+                                    </div>
+                                )}
+                                
+                                <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-medium text-gray-800 truncate">{productName}</h4>
+                                <p className="text-xs text-gray-400">
+                                {item.quantity} dona × {item.price?.toLocaleString("uz-UZ")} UZS
+                                </p>
+                                </div>
+                                
+                                <span className="text-sm font-semibold text-gray-900 shrink-0">
+                                {((item.price || 0) * (item.quantity || 1)).toLocaleString("uz-UZ")} UZS
+                                </span>
+                                </div>
+                            );
+                        })}
                         </div>
                         
                         <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Jami summa:</span>
+                        <span className="text-xs font-medium text-gray-500">Jami summa:</span>
                         <span className="text-sm font-bold text-gray-900">
                         {order.total ? order.total.toLocaleString("uz-UZ") : 0} UZS
                         </span>
