@@ -25,7 +25,13 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     
     // Profil tugmasi bosilganda xulq-atvorni boshqarish
     const handleProfileClick = (e: React.MouseEvent) => {
-        if (!user) {
+        // Telegram WebApp ichida ochilganini aniqlash
+        const isTelegramWebApp =
+        typeof window !== "undefined" &&
+        Boolean((window as any).Telegram?.WebApp?.initDataUnsafe?.user);
+        
+        // Foydalanuvchi tizimga kirmagan bo'lsa VA Telegram WebApp ichida bo'lmasa modal ochiladi
+        if (!user && !isTelegramWebApp) {
             e.preventDefault();
             setIsAuthModalOpen(true);
         }
