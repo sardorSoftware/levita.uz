@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // O'zingdagi prisma import yo'lini tekshirib qo'y
+import { prisma } from "@/lib/prisma"; // O'zingdagi prisma import yo'li
 
 export async function POST(req: Request) {
     try {
@@ -7,24 +7,26 @@ export async function POST(req: Request) {
         const { name, phone, address, items, total, userId } = body;
         
         // Ma'lumotlar kelganini tekshirish
-        if (!phone || !items || items.length === 0) {
+        if (!phone || !items || !Array.isArray(items) || items.length === 0) {
             return NextResponse.json(
                 { error: "Telefon raqam va mahsulotlar bo'lishi shart!" },
                 { status: 400 }
             );
         }
         
-        // Prisma orqali Order va uning OrderItem'larini bir vaqtning o'zida yaratish
+        // Prisma orqali Order va uning OrderItem'larini xatosiz yaratish
         const newOrder = await prisma.order.create({
             data: {
                 name: name || "Noma'lum",
                 phone: phone,
                 address: address || "Ko'rsatilmagan",
-                total: Number(total),
+                total: Number(total) || 0,
                 userId: userId || null, // Agar user logan bo'lsa ulanadi
                 items: {
                     create: items.map((item: any) => ({
-                        productId: item.id || item.productId, // Mahsulot ID si
+                        // ID bo'lmasa null ketadi, shunda Prisma xato bermaydi
+                        productId: item.id || item.productId || null,
+                        name: item.name || "Mahsulot", // Mahsulot nomi
                         quantity: Number(item.quantity || 1),
                         price: Number(item.price || 0),
                     })),

@@ -61,7 +61,7 @@ model Order {
   id        String      @id @default(cuid())
   userId    String?     
   user      User?       @relation(fields: [userId], references: [id])
-  name      String?     // <-- Mana bu qo'shildi (mijoz ismi uchun)
+  name      String?     // Mijoz ismi
   items     OrderItem[]
   total     Float
   status    OrderStatus @default(PENDING)
@@ -72,11 +72,12 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?  // <-- Ixtiyoriy qilindi (ID kelmasa ham xato bermaydi)
+  product   Product? @relation(fields: [productId], references: [id])
+  name      String?  // <-- Mahsulot nomi to'g'ridan-to'g'ri yozilishi uchun
   quantity  Int
   price     Float
 }
