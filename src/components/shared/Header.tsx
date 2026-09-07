@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, MapPin, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,8 +15,37 @@ interface HeaderProps {
 export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     const pathname = usePathname();
     const router = useRouter();
-    const { user } = useUserStore();
+    const { user, setUser } = useUserStore();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isWebApp, setIsWebApp] = useState(false);
+    
+    // Telegram Mini App ichida ochilganda userni avtomatik Zustand store'ga saqlash
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const tg = (window as any).Telegram?.WebApp;
+            
+            if (tg) {
+                tg.ready();
+                const tgUser = tg.initDataUnsafe?.user;
+                
+                if (tgUser) {
+                    setIsWebApp(true);
+                    
+                    // Agar store'da foydalanuvchi bo'lmasa, Mini App ma'lumotlari bilan to'ldiramiz
+                    if (!user) {
+                        setUser({
+                            id: tgUser.id,
+                            telegramId: tgUser.id.toString(),
+                            first_name: tgUser.first_name,
+                            last_name: tgUser.last_name || "",
+                            username: tgUser.username || "",
+                            avatar_url: tgUser.photo_url || "",
+                        });
+                    }
+                }
+            }
+        }
+    }, [user, setUser]);
     
     // Agar buyurtmalar sahifasida bo'lsak, header ko'rsatilmasin
     if (pathname === "/orders") {
@@ -25,13 +54,8 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     
     // Profil tugmasi bosilganda xulq-atvorni boshqarish
     const handleProfileClick = (e: React.MouseEvent) => {
-        // Telegram WebApp ichida ochilganini aniqlash
-        const isTelegramWebApp =
-        typeof window !== "undefined" &&
-        Boolean((window as any).Telegram?.WebApp?.initDataUnsafe?.user);
-        
-        // Foydalanuvchi tizimga kirmagan bo'lsa VA Telegram WebApp ichida bo'lmasa modal ochiladi
-        if (!user && !isTelegramWebApp) {
+        // Faqat foydalanuvchi kirmagan bo'lsa va u oddiy Veb-sayt brauzerida bo'lsa modal ochiladi
+        if (!user && !isWebApp) {
             e.preventDefault();
             setIsAuthModalOpen(true);
         }

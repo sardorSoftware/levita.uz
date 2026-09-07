@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { TelegramProvider } from "@/providers/TelegramProvider";
 import "./globals.css";
 
@@ -22,8 +23,11 @@ export default function RootLayout({
     return (
         <html lang="uz" suppressHydrationWarning>
         <head>
-        {/* Telegram Web App scriptini oddiy HTML tegi orqali ulaymiz */}
-        <script src="https://telegram.org/js/telegram-web-app.js" async />
+        {/* strategy="beforeInteractive" — SDK sahifa va React komponentlari yuklanishidan oldin tayyor bo'lishini ta'minlaydi */}
+        <Script
+        src="https://telegram.org/js/telegram-web-app.js"
+        strategy="beforeInteractive"
+        />
         </head>
         <body className="bg-cream text-dark antialiased selection:bg-primary/20">
         <TelegramProvider>

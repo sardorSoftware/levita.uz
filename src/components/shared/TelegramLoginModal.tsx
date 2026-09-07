@@ -1,70 +1,88 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { X } from "lucide-react";
+import { useUserStore } from "@/store/useUserStore";
 
-interface Props {
+interface TelegramLoginModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
 }
 
-export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Props) {
+export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: TelegramLoginModalProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { setUser } = useUserStore();
+    
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !containerRef.current) return;
         
-        // Window obyektiga Telegram qayta aloqa funksiyasini biriktiramiz
-        (window as any).onTelegramAuth = async (user: any) => {
-            try {
-                const res = await fetch("/api/auth/telegram", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ telegramData: user }),
-                });
-                
-                if (res.ok) {
-                    onSuccess();
-                    onClose();
-                    window.location.reload();
-                } else {
-                    alert("Avtorizatsiyadan o'tishda xatolik yuz berdi!");
-                }
-            } catch (err) {
-                console.error(err);
-            }
+        // Oldingi yozilgan widgetni tozalash (qayta-qayta chiqavermasligi uchun)
+        containerRef.current.innerHTML = "";
+        
+        const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME;
+        
+        if (!botUsername) {
+            console.error("Bot username topilmadi! .env faylni tekshiring.");
+            return;
+        }
+        
+        // Tizimga muvaffaqiyatli kirilganda ishlaydigan global funksiya
+        (window as any).onTelegramAuth = (user: any) => {
+            // Web browser orqali kirgan userni Zustand'ga saqlaymiz
+            setUser({
+                id: user.id,
+                telegramId: user.id.toString(),
+                first_name: user.first_name,
+                last_name: user.last_name || "",
+                username: user.username || "",
+                avatar_url: user.photo_url || "",
+            });
+            onSuccess();
+            onClose();
         };
         
+        // Telegram widget scriptini yaratish
         const script = document.createElement("script");
         script.src = "https://telegram.org/js/telegram-widget.js?22";
-        script.setAttribute("data-telegram-login", process.env.NEXT_PUBLIC_BOT_USERNAME || "bot_username");
+        script.setAttribute("data-telegram-login", botUsername);
         script.setAttribute("data-size", "large");
-        script.setAttribute("data-radius", "10");
+        script.setAttribute("data-radius", "12");
         script.setAttribute("data-onauth", "onTelegramAuth(user)");
         script.setAttribute("data-request-access", "write");
         script.async = true;
         
-        const container = document.getElementById("telegram-widget-container");
-        if (container) {
-            container.innerHTML = "";
-            container.appendChild(script);
-        }
-    }, [isOpen]);
+        containerRef.current.appendChild(script);
+        
+        return () => {
+            delete (window as any).onTelegramAuth;
+        };
+    }, [isOpen, onClose, onSuccess, setUser]);
     
     if (!isOpen) return null;
     
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow-xl">
-        <h3 className="text-xl font-bold mb-2">Tizimga kirish</h3>
-        <p className="text-gray-500 text-sm mb-6">
-        Buyurtmalarni kuzatish va shaxsiy kabinetdan foydalanish uchun Telegram orqali kiring.
-        </p>
-        <div id="telegram-widget-container" className="flex justify-center my-4 min-h-[40px]"></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
         <button
         onClick={onClose}
-        className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-sm transition"
+        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors"
         >
-        Yopish
+        <X className="w-5 h-5" />
         </button>
+        
+        <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Tizimga kirish</h3>
+        <p className="text-sm text-gray-500">
+        Buyurtmalarni kuzatish va shaxsiy kabinetdan foydalanish uchun Telegram orqali kiring.
+        </p>
+        </div>
+        
+        {/* Telegram tugmasi shu div ichiga tushadi */}
+        <div 
+        ref={containerRef} 
+        className="flex justify-center min-h-[40px]" 
+        />
         </div>
         </div>
     );
