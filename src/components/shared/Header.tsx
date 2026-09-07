@@ -24,14 +24,12 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         if (typeof window !== "undefined") {
             const tg = (window as any).Telegram?.WebApp;
             
-            if (tg && tg.initDataUnsafe?.user) {
-                const tgUser = tg.initDataUnsafe.user;
-                setIsWebApp(true);
-                
+            if (tg) {
+                setIsWebApp(true); // Biz Telegram ichidamiz
                 tg.ready();
                 
-                // Agar store'da foydalanuvchi bo'lmasa, Mini App ma'lumotlari bilan to'ldiramiz
-                if (!user) {
+                const tgUser = tg.initDataUnsafe?.user;
+                if (tgUser && !user) {
                     setUser({
                         id: tgUser.id,
                         telegramId: tgUser.id.toString(),
@@ -52,15 +50,15 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     
     // Profil tugmasi bosilganda xulq-atvorni boshqarish
     const handleProfileClick = (e: React.MouseEvent) => {
-        // Agar foydalanuvchi tizimga kirmagan bo'lsa
+        // 1. Agar foydalanuvchi Telegram Mini App ichida bo'lsa — HECH QACHON modal ochilmaydi!
+        if (isWebApp) {
+            return; // To'g'ridan-to'g'ri /profile sahifasiga o'taveradi
+        }
+        
+        // 2. Agar oddiy veb-saytda (Chrome / Safari) bo'lsa va user kirmagan bo'lsa — modalni ochamiz
         if (!user) {
-            // Agar Telegram Mini App ichida bo'lmasa, veb uchun login modalni ochamiz
-            if (!isWebApp) {
-                e.preventDefault();
-                setIsAuthModalOpen(true);
-            }
-            // Agar Mini App ichida bo'lsa-yu, hali user yuklanmagan bo'lsa, 
-            // oddiygina profil sahifasiga o'tishiga ruxsat beramiz (u yerda o'zi ushlab oladi)
+            e.preventDefault();
+            setIsAuthModalOpen(true);
         }
     };
     
@@ -130,12 +128,14 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         </div>
         </header>
         
-        {/* Telegram Login Modal oynasi */}
-        <TelegramLoginModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={() => router.push("/profile")}
-        />
+        {/* Telegram Login Modal oynasi (Faqat veb uchun ishlaydi, Mini App'da umuman render bo'lmaydi) */}
+        {!isWebApp && (
+            <TelegramLoginModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onSuccess={() => router.push("/profile")}
+            />
+        )}
         </>
     );
 };
