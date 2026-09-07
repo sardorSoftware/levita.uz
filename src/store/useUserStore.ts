@@ -1,6 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User } from "@/types";
+
+// User tipini barcha zarur Telegram maydonlari bilan kengayturamiz
+export interface User {
+    id: number | string;
+    telegramId?: string;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    avatar_url?: string;
+    phone?: string;
+}
 
 interface UserState {
     user: User | null;

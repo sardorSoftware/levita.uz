@@ -1,9 +1,11 @@
 "use client";
 
-import { Menu, MapPin, User } from "lucide-react";
+import { useState } from "react";
+import { Menu, MapPin, User as UserIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
+import TelegramLoginModal from "./TelegramLoginModal";
 
 interface HeaderProps {
     onOpenSidebar: () => void;
@@ -12,17 +14,27 @@ interface HeaderProps {
 
 export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     const pathname = usePathname();
+    const router = useRouter();
     const { user } = useUserStore();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     
     // Agar buyurtmalar sahifasida bo'lsak, header ko'rsatilmasin
     if (pathname === "/orders") {
         return null;
     }
     
+    // Profil tugmasi bosilganda xulq-atvorni boshqarish
+    const handleProfileClick = (e: React.MouseEvent) => {
+        if (!user) {
+            e.preventDefault();
+            setIsAuthModalOpen(true);
+        }
+    };
+    
     return (
+        <>
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        
         {/* Chap qism: Menyu va Logo */}
         <div className="flex items-center gap-3">
         <button
@@ -33,9 +45,9 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         <Menu className="w-5 h-5" />
         </button>
         
-        {/* Naqtol Logosi (3D text-shadow dizayni bilan) */}
+        {/* Naqtol Logosi */}
         <Link href="/" className="flex items-center select-none group">
-        <span 
+        <span
         className="text-2xl font-black tracking-tight text-[#1a1a1c]"
         style={{
             textShadow: "0 1px 2px rgba(0, 0, 0, 0.3), 0 -1px 1px rgba(255, 255, 255, 0.9)",
@@ -43,7 +55,7 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         >
         naqt
         </span>
-        <span 
+        <span
         className="text-2xl font-black tracking-tight text-[#FF4D00]"
         style={{
             textShadow: "0 1px 2px rgba(0, 0, 0, 0.25), 0 -1px 1px rgba(255, 255, 255, 0.8)",
@@ -54,8 +66,8 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         </Link>
         </div>
         
-        {/* Markaziy qism: Bosiladigan Lokatsiya tugmasi */}
-        <button 
+        {/* Markaziy qism: Lokatsiya tugmasi */}
+        <button
         onClick={onOpenLocation}
         className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
         >
@@ -66,6 +78,7 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         {/* O'ng qism: Profil / Kabinet */}
         <Link
         href="/profile"
+        onClick={handleProfileClick}
         className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
         >
         <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs overflow-hidden">
@@ -74,15 +87,22 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         ) : user?.first_name ? (
             user.first_name[0].toUpperCase()
         ) : (
-            <User className="w-3.5 h-3.5" />
+            <UserIcon className="w-3.5 h-3.5" />
         )}
         </div>
         <span className="text-xs font-semibold text-gray-800 hidden sm:inline">
         {user?.first_name || "Kabinet"}
         </span>
         </Link>
-        
         </div>
         </header>
+        
+        {/* Telegram Login Modal oynasi */}
+        <TelegramLoginModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => router.push("/profile")}
+        />
+        </>
     );
 };
