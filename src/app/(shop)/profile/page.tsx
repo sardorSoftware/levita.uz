@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2, Send } from "lucide-react";
+import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2, Send, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,57 +16,74 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [successMessage, setSuccessMessage] = useState("");
-    const [isInTelegram, setIsInTelegram] = useState(false);
     
-    // Bot username
-    const BOT_USERNAME = "naqtol_bot";
+    const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || "naqtol_bot";
     
-    useEffect(() => {
-        async function fetchUserData() {
-            try {
-                if (typeof window !== "undefined") {
-                    const hasLoggedOut = sessionStorage.getItem("has_logged_out");
-                    const tg = (window as any).Telegram?.WebApp;
-                    const initData = tg?.initData;
+    const fetchUserData = async (isManualCheck = false) => {
+        if (isManualCheck) setIsFetching(true);
+        try {
+            if (typeof window !== "undefined") {
+                const hasLoggedOut = sessionStorage.getItem("has_logged_out");
+                const tg = (window as any).Telegram?.WebApp;
+                const initData = tg?.initData;
+                
+                if (hasLoggedOut === "true" && !isManualCheck) {
+                    setIsFetching(false);
+                    return;
+                }
+                
+                const res = await fetch("/api/auth/me", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ initData }),
+                });
+                
+                const data = await res.json();
+                
+                if (data.success && data.user) {
+                    sessionStorage.removeItem("has_logged_out");
                     
-                    if (hasLoggedOut === "true") {
-                        setIsFetching(false);
-                        return;
-                    }
-                    
-                    // Xavfsiz POST so'rov orqali foydalanuvchini tekshirish va olish
-                    const res = await fetch("/api/auth/me", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ initData }),
+                    setUser({
+                        id: data.user.id,
+                        telegramId: data.user.telegramId.toString(),
+                        first_name: data.user.firstName || "",
+                        last_name: data.user.lastName || "",
+                        username: data.user.username || "",
+                        avatar_url: data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
+                        phone: data.user.phone || "",
                     });
                     
-                    const data = await res.json();
-                    
-                    if (data.success && data.user) {
-                        setIsInTelegram(true);
-                        setUser({
-                            id: data.user.id,
-                            telegramId: data.user.telegramId.toString(),
-                            first_name: data.user.firstName || "",
-                            last_name: data.user.lastName || "",
-                            username: data.user.username || "",
-                            avatar_url: data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
-                            phone: data.user.phone || "",
-                        });
+                    if (isManualCheck && data.user.phone) {
+                        setSuccessMessage("Muvaffaqiyatli tasdiqlandi!");
                     }
                 }
-            } catch (err) {
-                console.error("Auth sync error:", err);
-            } finally {
-                setIsFetching(false);
             }
+        } catch (err) {
+            console.error("Auth sync error:", err);
+        } finally {
+            setIsFetching(false);
         }
-        
+    };
+    
+    useEffect(() => {
         fetchUserData();
+        
+        const handleFocus = () => {
+            fetchUserData();
+        };
+        
+        window.addEventListener("focus", handleFocus);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                fetchUserData();
+            }
+        });
+        
+        return () => {
+            window.removeEventListener("focus", handleFocus);
+        };
     }, [setUser]);
     
-    // Store o'zgarganda form inputlarini yangilash
     useEffect(() => {
         if (user) {
             setFirstName(user.first_name || "");
@@ -120,13 +137,13 @@ export default function ProfilePage() {
     };
     
     const handleLoginRedirect = () => {
-        window.location.href = `https://t.me/${BOT_USERNAME}?start=auth`;
+        window.open(`https://t.me/${BOT_USERNAME}?start=auth`, "_blank");
     };
     
     const avatarUrl = user?.avatar_url || "";
     const isAuthorized = Boolean(user && user.telegramId && user.phone);
     
-    if (isFetching) {
+    if (isFetching && !user?.telegramId) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -234,12 +251,22 @@ export default function ProfilePage() {
             <p className="text-amber-700 text-xs">
             Buyurtmalarni kuzatish va shaxsiy kabinetdan to'liq foydalanish uchun Telegram botimiz orqali telefon raqamingizni yuboring.
             </p>
+            
             <button
             onClick={handleLoginRedirect}
             className="w-full py-3 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
             >
             <Send className="w-4 h-4" />
             <span>Telegram orqali kirish / Tasdiqlash</span>
+            </button>
+            
+            <button
+            onClick={() => fetchUserData(true)}
+            disabled={isFetching}
+            className="w-full py-2.5 bg-white hover:bg-gray-50 text-amber-800 border border-amber-300 font-medium rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
+            <span>Raqamni yubordim, tekshirish</span>
             </button>
             </div>
         )}
@@ -266,7 +293,7 @@ export default function ProfilePage() {
         className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
         >
         <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
+        <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-gray-800 transition-colors">
         <MapPin className="w-5 h-5" />
         </div>
         <span className="text-sm font-semibold text-gray-800">Saqlangan manzillar</span>

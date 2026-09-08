@@ -14,6 +14,7 @@ export async function POST(req: Request) {
         
         const telegramIdBigInt = BigInt(targetId);
         
+        // Upsert yordamida foydalanuvchini yaratamiz yoki yangilaymiz
         const user = await prisma.user.upsert({
             where: { telegramId: telegramIdBigInt },
             update: {
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
                 last_name: user.lastName,
                 username: user.username,
                 phone: user.phone,
-                avatar_url: avatar_url || "", // <-- body'dan kelgan avatar_url ishlatildi
+                avatar_url: avatar_url || "",
             },
         });
     } catch (error) {

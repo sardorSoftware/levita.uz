@@ -28,7 +28,6 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                 const tg = (window as any).Telegram?.WebApp;
                 const initData = tg?.initData;
                 
-                // Xavfsiz POST so'rov
                 const res = await fetch("/api/auth/me", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -108,7 +107,7 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         onClick={onOpenLocation}
         className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
         >
-        <MapPin className="v-4 h-4 w-4 text-primary" />
+        <MapPin className="w-4 h-4 text-primary" />
         <span>Toshkent sh.</span>
         </button>
         

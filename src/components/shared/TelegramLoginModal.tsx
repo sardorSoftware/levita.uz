@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
-import { useUserStore } from "@/store/useUserStore";
+import { X, Send } from "lucide-react";
 
 interface TelegramLoginModalProps {
     isOpen: boolean;
@@ -10,70 +8,19 @@ interface TelegramLoginModalProps {
     onSuccess: () => void;
 }
 
-export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: TelegramLoginModalProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const { setUser } = useUserStore();
-    
-    useEffect(() => {
-        if (!isOpen || !containerRef.current) return;
-        
-        containerRef.current.innerHTML = "";
-        const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "naqtol_bot";
-        
-        // Telegram avtorizatsiyasidan keyin ishlaydigan global funksiya
-        (window as any).onTelegramAuth = async (telegramUser: any) => {
-            try {
-                const res = await fetch("/api/auth/telegram", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ telegramData: telegramUser }),
-                });
-                
-                const data = await res.json();
-                if (data.success) {
-                    // Muvaffaqiyatli kirgach, logout holatini o'chiramiz
-                    if (typeof window !== "undefined") {
-                        sessionStorage.removeItem("has_logged_out");
-                    }
-                    
-                    setUser({
-                        id: data.user.id,
-                        telegramId: data.user.telegramId.toString(),
-                        first_name: data.user.firstName,
-                        last_name: data.user.lastName || "",
-                        username: data.user.username || "",
-                        avatar_url: telegramUser.photo_url || "",
-                        phone: data.user.phone || "",
-                    });
-                    onSuccess();
-                    onClose();
-                }
-            } catch (err) {
-                console.error("Auth verification error:", err);
-            }
-        };
-        
-        const script = document.createElement("script");
-        script.src = "https://telegram.org/js/telegram-widget.js?22";
-        script.setAttribute("data-telegram-login", botUsername);
-        script.setAttribute("data-size", "large");
-        script.setAttribute("data-radius", "12");
-        script.setAttribute("data-onauth", "onTelegramAuth(user)");
-        script.setAttribute("data-request-access", "write");
-        script.async = true;
-        
-        containerRef.current.appendChild(script);
-        
-        return () => {
-            delete (window as any).onTelegramAuth;
-        };
-    }, [isOpen, onClose, onSuccess, setUser]);
+export default function TelegramLoginModal({ isOpen, onClose }: TelegramLoginModalProps) {
+    const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || "naqtol_bot";
     
     if (!isOpen) return null;
     
+    const handleLoginRedirect = () => {
+        // Veb-brauzerdagilarni botga yo'naltiramiz
+        window.location.href = `https://t.me/${BOT_USERNAME}?start=auth`;
+    };
+    
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-        <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative">
+        <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative text-center">
         <button
         onClick={onClose}
         className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
@@ -81,14 +28,20 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
         <X className="w-5 h-5" />
         </button>
         
-        <div className="text-center mb-6">
+        <div className="mb-6">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Tizimga kirish</h3>
         <p className="text-sm text-gray-500">
-        Buyurtmalarni kuzatish va shaxsiy kabinetdan foydalanish uchun Telegram orqali kiring.
+        Buyurtmalarni kuzatish va shaxsiy kabinetdan to'liq foydalanish uchun Telegram botimiz orqali kiring va raqamingizni yuboring.
         </p>
         </div>
         
-        <div ref={containerRef} className="flex justify-center min-h-[40px]" />
+        <button
+        onClick={handleLoginRedirect}
+        className="w-full py-3.5 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+        >
+        <Send className="w-4 h-4" />
+        <span>Telegram orqali kirish / Tasdiqlash</span>
+        </button>
         </div>
         </div>
     );
