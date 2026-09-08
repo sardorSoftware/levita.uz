@@ -96,11 +96,11 @@ export default function ProfilePage() {
                 }
             } catch (err) {
                 console.error("Auth sync error:", err);
-            } flex: {
+            } finally {
                 setIsFetching(false);
             }
         },
-        [setUser]
+        [setUser, user?.telegramId]
     );
     
     useEffect(() => {
@@ -238,7 +238,7 @@ export default function ProfilePage() {
         </div>
         
         {successMessage && (
-            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 p-3 rounded-2xl text-sm border border-emerald-100 animate-fadeIn">
+            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 p-3 rounded-2xl text-sm border border-emerald-100">
             <CheckCircle2 className="w-5 h-5 shrink-0" />
             <span>{successMessage}</span>
             </div>
