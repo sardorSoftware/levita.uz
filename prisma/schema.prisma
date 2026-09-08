@@ -7,18 +7,32 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  telegramId BigInt?  @unique
+  id         String        @id @default(cuid())
+  telegramId BigInt?       @unique
   firstName  String?
   lastName   String?
   username   String?
   phone      String?
-  role       Role     @default(USER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  role       Role          @default(USER)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
   orders     Order[]
+  sessions   AuthSession[]
 
   @@index([phone])
+  @@index([telegramId])
+}
+
+model AuthSession {
+  id         String        @id @default(cuid())
+  token      String        @unique
+  telegramId BigInt?
+  status     SessionStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  expiresAt  DateTime
+  user       User?         @relation(fields: [telegramId], references: [telegramId], onDelete: Cascade)
+
+  @@index([token])
   @@index([telegramId])
 }
 
@@ -53,9 +67,9 @@ model Order {
   status    OrderStatus @default(PENDING)
   address   String?
   phone     String
+  name      String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  name      String?
   user      User?       @relation(fields: [userId], references: [id])
   items     OrderItem[]
 
@@ -84,4 +98,10 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum SessionStatus {
+  PENDING
+  APPROVED
+  EXPIRED
 }
