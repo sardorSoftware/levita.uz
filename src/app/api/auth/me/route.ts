@@ -11,7 +11,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ success: false, error: "Telegram ID topilmadi" }, { status: 200 });
         }
         
-        const telegramId = BigInt(telegramIdStr);
+        let telegramId: bigint;
+        try {
+            telegramId = BigInt(telegramIdStr);
+        } catch {
+            return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
+        }
         
         const user = await prisma.user.findUnique({
             where: { telegramId },
@@ -26,11 +31,14 @@ export async function GET(req: Request) {
             user: {
                 id: user.id.toString(),
                 telegramId: user.telegramId ? user.telegramId.toString() : telegramIdStr,
-                first_name: user.firstName,
-                last_name: user.lastName,
-                username: user.username,
-                phone: user.phone,
-                avatar_url: "", 
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                first_name: user.firstName || "",
+                last_name: user.lastName || "",
+                username: user.username || "",
+                phone: user.phone || "",
+                avatarUrl: "",
+                avatar_url: "",
             },
         });
     } catch (error) {
@@ -44,18 +52,16 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { initData, telegramId: bodyTelegramId, first_name, last_name, username, avatar_url } = body;
         
-        let telegramUser: { id: string | number; first_name?: string; last_name?: string; username?: string; avatar_url?: string } | null = null;
-
-        // 1. Agar initData kelgan bo'lsa, xavfsizlik tekshiruvidan o'tkazamiz
+        let telegramUser: any = null;
+        
         if (initData) {
             const isValid = verifyTelegramInitData(initData);
             if (isValid) {
                 telegramUser = parseTelegramUser(initData);
             }
-        } 
+        }
         
-        // 2. Agar initData bo'lmasa yoki lokal testda bo'lsangiz, tana (body) orqali yuborilgan ma'lumotni ham qabul qilamiz (Fallback)
-        if (!telegramUser && bodyTelegramId) {
+        if (!telegramUser && bodyTelegramId && bodyTelegramId !== "undefined" && bodyTelegramId !== "null") {
             telegramUser = {
                 id: bodyTelegramId,
                 first_name: first_name || "Mijoz",
@@ -64,20 +70,22 @@ export async function POST(req: Request) {
                 avatar_url: avatar_url || "",
             };
         }
-
-        // Agar umuman ma'lumot topilmasa, 401 o'rniga 200 bilan success: false qaytaramiz (Konsolda qizil 401 xatosi chiqmaydi)
+        
         if (!telegramUser || !telegramUser.id) {
-            return NextResponse.json({ success: false, error: "Tizimga kirilmagan yoki ma'lumot topilmadi" }, { status: 200 });
+            return NextResponse.json({ success: false, error: "Tizimga kirilmagan" }, { status: 200 });
         }
         
-        const telegramIdBigInt = BigInt(telegramUser.id);
+        let telegramIdBigInt: bigint;
+        try {
+            telegramIdBigInt = BigInt(telegramUser.id);
+        } catch {
+            return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
+        }
         
         const user = await prisma.user.upsert({
             where: { telegramId: telegramIdBigInt },
             update: {
-                firstName: telegramUser.first_name || "Mijoz",
-                lastName: telegramUser.last_name || null,
-                username: telegramUser.username || null,
+                username: telegramUser.username || undefined,
             },
             create: {
                 telegramId: telegramIdBigInt,
@@ -87,16 +95,21 @@ export async function POST(req: Request) {
             },
         });
         
+        const finalAvatar = telegramUser.avatar_url || telegramUser.photo_url || avatar_url || "";
+        
         return NextResponse.json({
             success: true,
             user: {
                 id: user.id.toString(),
-                telegramId: user.telegramId ? user.telegramId.toString() : "",
-                first_name: user.firstName,
-                last_name: user.lastName,
-                username: user.username,
-                phone: user.phone,
-                avatar_url: telegramUser.avatar_url || "",
+                telegramId: user.telegramId ? user.telegramId.toString() : telegramUser.id.toString(),
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                first_name: user.firstName || "",
+                last_name: user.lastName || "",
+                username: user.username || "",
+                phone: user.phone || "",
+                avatarUrl: finalAvatar,
+                avatar_url: finalAvatar,
             },
         });
     } catch (error) {

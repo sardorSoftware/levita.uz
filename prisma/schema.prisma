@@ -4,20 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url shu yerdan olib tashlandi (Prisma 7 talabi)
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
 }
 
 model User {
@@ -28,9 +14,12 @@ model User {
   username   String?
   phone      String?
   role       Role     @default(USER)
-  orders     Order[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  orders     Order[]
+
+  @@index([phone])
+  @@index([telegramId])
 }
 
 model Category {
@@ -51,33 +40,48 @@ model Product {
   inStock     Boolean     @default(true)
   image       String
   categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model Order {
   id        String      @id @default(cuid())
-  userId    String?     
-  user      User?       @relation(fields: [userId], references: [id])
-  name      String?     // Mijoz ismi
-  items     OrderItem[]
+  userId    String?
   total     Float
   status    OrderStatus @default(PENDING)
   address   String?
   phone     String
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  name      String?
+  user      User?       @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+
+  @@index([userId])
 }
 
 model OrderItem {
   id        String   @id @default(cuid())
   orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String?  // <-- Ixtiyoriy qilindi (ID kelmasa ham xato bermaydi)
-  product   Product? @relation(fields: [productId], references: [id])
-  name      String?  // <-- Mahsulot nomi to'g'ridan-to'g'ri yozilishi uchun
+  productId String?
   quantity  Int
   price     Float
+  name      String?
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }

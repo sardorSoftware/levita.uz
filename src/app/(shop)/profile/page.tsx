@@ -1,8 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck, Phone, User as UserIcon, CheckCircle2, Save, Loader2, Send, RefreshCw } from "lucide-react";
+import {
+    MapPin,
+    ShoppingBag,
+    LogOut,
+    ChevronRight,
+    ShieldCheck,
+    Phone,
+    User as UserIcon,
+    CheckCircle2,
+    Save,
+    Loader2,
+    Send,
+    RefreshCw,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,77 +30,108 @@ export default function ProfilePage() {
     const [isFetching, setIsFetching] = useState(true);
     const [successMessage, setSuccessMessage] = useState("");
     
+    const isMounted = useRef(false);
     const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || "naqtol_bot";
     
-    const fetchUserData = async (isManualCheck = false) => {
-        if (isManualCheck) setIsFetching(true);
-        try {
-            if (typeof window !== "undefined") {
-                const hasLoggedOut = sessionStorage.getItem("has_logged_out");
-                const tg = (window as any).Telegram?.WebApp;
-                const initData = tg?.initData;
-                
-                if (hasLoggedOut === "true" && !isManualCheck) {
-                    setIsFetching(false);
-                    return;
-                }
-                
-                const res = await fetch("/api/auth/me", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ initData }),
-                });
-                
-                const data = await res.json();
-                
-                if (data.success && data.user) {
-                    sessionStorage.removeItem("has_logged_out");
+    const fetchUserData = useCallback(
+        async (isManualCheck = false) => {
+            if (isManualCheck) setIsFetching(true);
+            
+            try {
+                if (typeof window !== "undefined") {
+                    const hasLoggedOut = sessionStorage.getItem("has_logged_out");
+                    const tg = (window as any).Telegram?.WebApp;
+                    const initData = tg?.initData;
                     
-                    setUser({
-                        id: data.user.id,
-                        telegramId: data.user.telegramId.toString(),
-                        first_name: data.user.firstName || "",
-                        last_name: data.user.lastName || "",
-                        username: data.user.username || "",
-                        avatar_url: data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
-                        phone: data.user.phone || "",
+                    if (hasLoggedOut === "true" && !isManualCheck) {
+                        setIsFetching(false);
+                        return;
+                    }
+                    
+                    const res = await fetch("/api/auth/me", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            initData: initData || "",
+                            telegramId: user?.telegramId || "",
+                        }),
                     });
                     
-                    if (isManualCheck && data.user.phone) {
-                        setSuccessMessage("Muvaffaqiyatli tasdiqlandi!");
+                    const data = await res.json();
+                    
+                    if (data.success && data.user) {
+                        sessionStorage.removeItem("has_logged_out");
+                        
+                        setUser({
+                            id: data.user.id,
+                            telegramId: data.user.telegramId?.toString() || "",
+                            first_name: data.user.first_name || data.user.firstName || "",
+                            last_name: data.user.last_name || data.user.lastName || "",
+                            firstName: data.user.firstName || data.user.first_name || "",
+                            lastName: data.user.lastName || data.user.last_name || "",
+                            username: data.user.username || "",
+                            avatar_url:
+                            data.user.avatar_url ||
+                            data.user.avatarUrl ||
+                            tg?.initDataUnsafe?.user?.photo_url ||
+                            "",
+                            avatarUrl:
+                            data.user.avatar_url ||
+                            data.user.avatarUrl ||
+                            tg?.initDataUnsafe?.user?.photo_url ||
+                            "",
+                            phone: data.user.phone || "",
+                        });
+                        
+                        if (isManualCheck) {
+                            if (data.user.phone) {
+                                setSuccessMessage("Muvaffaqiyatli tasdiqlandi!");
+                            } else {
+                                setSuccessMessage(
+                                    "Raqam hali tasdiqlanmadi. Botga kontakt yuborganingizga ishonch hosil qiling."
+                                );
+                            }
+                        }
                     }
                 }
+            } catch (err) {
+                console.error("Auth sync error:", err);
+            } flex: {
+                setIsFetching(false);
             }
-        } catch (err) {
-            console.error("Auth sync error:", err);
-        } finally {
-            setIsFetching(false);
-        }
-    };
+        },
+        [setUser]
+    );
     
     useEffect(() => {
-        fetchUserData();
+        if (!isMounted.current) {
+            isMounted.current = true;
+            fetchUserData();
+        }
         
         const handleFocus = () => {
             fetchUserData();
         };
         
-        window.addEventListener("focus", handleFocus);
-        document.addEventListener("visibilitychange", () => {
+        const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
                 fetchUserData();
             }
-        });
+        };
+        
+        window.addEventListener("focus", handleFocus);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
         
         return () => {
             window.removeEventListener("focus", handleFocus);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-    }, [setUser]);
+    }, [fetchUserData]);
     
     useEffect(() => {
         if (user) {
-            setFirstName(user.first_name || "");
-            setLastName(user.last_name || "");
+            setFirstName(user.first_name || user.firstName || "");
+            setLastName(user.last_name || user.lastName || "");
             setPhone(user.phone || "");
         }
     }, [user]);
@@ -115,9 +159,11 @@ export default function ProfilePage() {
             if (data.success) {
                 setUser({
                     ...user,
-                    first_name: data.user.firstName,
-                    last_name: data.user.lastName,
-                    phone: data.user.phone,
+                    first_name: data.user.firstName || firstName,
+                    firstName: data.user.firstName || firstName,
+                    last_name: data.user.lastName || lastName,
+                    lastName: data.user.lastName || lastName,
+                    phone: data.user.phone || phone,
                 });
                 setSuccessMessage("Shaxsiy ma'lumotlar muvaffaqiyatli yangilandi!");
             }
@@ -140,13 +186,15 @@ export default function ProfilePage() {
         window.open(`https://t.me/${BOT_USERNAME}?start=auth`, "_blank");
     };
     
-    const avatarUrl = user?.avatar_url || "";
-    const isAuthorized = Boolean(user && user.telegramId && user.phone);
+    const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
+    const isAuthorized = Boolean(
+        user && user.telegramId && user.phone && sessionStorage.getItem("has_logged_out") !== "true"
+    );
     
     if (isFetching && !user?.telegramId) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#FF4D00]" />
             <p className="text-sm text-gray-500">Ma'lumotlar yuklanmoqda...</p>
             </div>
         );
@@ -155,10 +203,10 @@ export default function ProfilePage() {
     return (
         <div className="max-w-xl mx-auto px-4 pt-4 pb-24 space-y-4">
         <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-dark">Shaxsiy kabinet</h1>
+        <h1 className="text-xl font-bold text-gray-900">Shaxsiy kabinet</h1>
         
         {isAuthorized ? (
-            <div className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold border border-green-200 shadow-xs">
+            <div className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold border border-green-200">
             <ShieldCheck className="w-4 h-4" />
             <span>Tasdiqlangan</span>
             </div>
@@ -169,8 +217,8 @@ export default function ProfilePage() {
         )}
         </div>
         
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0 overflow-hidden">
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex items-center gap-4">
+        <div className="w-16 h-16 bg-[#FF4D00]/10 text-[#FF4D00] rounded-full flex items-center justify-center font-bold text-2xl shrink-0 overflow-hidden">
         {avatarUrl ? (
             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
         ) : firstName ? (
@@ -180,7 +228,7 @@ export default function ProfilePage() {
         )}
         </div>
         <div className="overflow-hidden flex-1">
-        <h2 className="font-bold text-dark text-base truncate">
+        <h2 className="font-bold text-gray-900 text-base truncate">
         {isAuthorized || firstName ? `${firstName} ${lastName}`.trim() : "Mehmon foydalanuvchi"}
         </h2>
         <p className="text-xs text-gray-500 truncate">
@@ -191,14 +239,14 @@ export default function ProfilePage() {
         
         {successMessage && (
             <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 p-3 rounded-2xl text-sm border border-emerald-100 animate-fadeIn">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
             <span>{successMessage}</span>
             </div>
         )}
         
         {isAuthorized ? (
-            <form onSubmit={handleUpdate} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-            <h2 className="text-sm font-bold text-dark">Ma'lumotlarni yangilash</h2>
+            <form onSubmit={handleUpdate} className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 space-y-4">
+            <h2 className="text-sm font-bold text-gray-900">Ma'lumotlarni yangilash</h2>
             
             <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">Ism</label>
@@ -206,7 +254,7 @@ export default function ProfilePage() {
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FF4D00]"
             required
             />
             </div>
@@ -217,7 +265,7 @@ export default function ProfilePage() {
             type="text"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FF4D00]"
             />
             </div>
             
@@ -229,7 +277,7 @@ export default function ProfilePage() {
             type="text"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FF4D00]"
             placeholder="+998 -- --- -- --"
             required
             />
@@ -239,7 +287,7 @@ export default function ProfilePage() {
             <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl text-sm shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF4D00] hover:bg-[#e04400] text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer disabled:opacity-50"
             >
             <Save className="w-4 h-4" />
             <span>{loading ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}</span>
@@ -254,7 +302,7 @@ export default function ProfilePage() {
             
             <button
             onClick={handleLoginRedirect}
-            className="w-full py-3 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+            className="w-full py-3 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
             >
             <Send className="w-4 h-4" />
             <span>Telegram orqali kirish / Tasdiqlash</span>
@@ -271,16 +319,16 @@ export default function ProfilePage() {
             </div>
         )}
         
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden divide-y divide-gray-100">
         <Link
         href="/orders"
         className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
         >
         <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
+        <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-[#FF4D00] transition-colors">
         <ShoppingBag className="w-5 h-5" />
         </div>
-        <span className="text-sm font-semibold text-dark">Buyurtmalarim</span>
+        <span className="text-sm font-semibold text-gray-900">Buyurtmalarim</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-gray-400">
         <span>Ko'rish</span>
@@ -308,7 +356,7 @@ export default function ProfilePage() {
         {isAuthorized && (
             <button
             onClick={handleLogout}
-            className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
             >
             <LogOut className="w-4 h-4" /> Hisobdan chiqish
             </button>

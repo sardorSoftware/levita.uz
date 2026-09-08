@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu, MapPin, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,9 +18,13 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     const { user, setUser } = useUserStore();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isWebApp, setIsWebApp] = useState(false);
+    const hasFetched = useRef(false);
     
     useEffect(() => {
         const checkAndFetchUser = async () => {
+            if (hasFetched.current) return;
+            hasFetched.current = true;
+            
             try {
                 const hasLoggedOut = sessionStorage.getItem("has_logged_out");
                 if (hasLoggedOut === "true") return;
@@ -31,7 +35,10 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                 const res = await fetch("/api/auth/me", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ initData }),
+                    body: JSON.stringify({
+                        initData: initData || "",
+                        telegramId: user?.telegramId || "",
+                    }),
                 });
                 
                 const data = await res.json();
@@ -39,11 +46,14 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                 if (data.success && data.user) {
                     setUser({
                         id: data.user.id,
-                        telegramId: data.user.telegramId.toString(),
-                        first_name: data.user.firstName || "",
-                        last_name: data.user.lastName || "",
+                        telegramId: data.user.telegramId?.toString() || "",
+                        first_name: data.user.first_name || data.user.firstName || "",
+                        last_name: data.user.last_name || data.user.lastName || "",
+                        firstName: data.user.firstName || data.user.first_name || "",
+                        lastName: data.user.lastName || data.user.last_name || "",
                         username: data.user.username || "",
-                        avatar_url: data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
+                        avatar_url: data.user.avatar_url || data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
+                        avatarUrl: data.user.avatar_url || data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
                         phone: data.user.phone || "",
                     });
                 }
@@ -59,11 +69,9 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                 tg.ready();
             }
             
-            if (!user) {
-                checkAndFetchUser();
-            }
+            checkAndFetchUser();
         }
-    }, [user, setUser]);
+    }, [setUser]); // Faqat komponent yuklanganda bir marta ishlaydi
     
     if (pathname === "/orders") {
         return null;
@@ -83,6 +91,10 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
             }
         }
     };
+    
+    const isAuthorized = Boolean(
+        user?.telegramId && user?.phone && sessionStorage.getItem("has_logged_out") !== "true"
+    );
     
     return (
         <>
@@ -107,7 +119,7 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         onClick={onOpenLocation}
         className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
         >
-        <MapPin className="w-4 h-4 text-primary" />
+        <MapPin className="w-4 h-4 text-[#FF4D00]" />
         <span>Toshkent sh.</span>
         </button>
         
@@ -116,29 +128,35 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
         onClick={handleProfileClick}
         className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
         >
-        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs overflow-hidden">
-        {user?.avatar_url ? (
-            <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-        ) : user?.first_name ? (
-            user.first_name[0].toUpperCase()
+        <div className="w-6 h-6 rounded-full bg-[#FF4D00]/10 text-[#FF4D00] flex items-center justify-center font-bold text-xs overflow-hidden">
+        {user?.avatar_url || user?.avatarUrl ? (
+            <img
+            src={user.avatar_url || user.avatarUrl}
+            alt="Avatar"
+            className="w-full h-full object-cover"
+            />
+        ) : user?.first_name || user?.firstName ? (
+            (user.first_name || user.firstName)?.[0]?.toUpperCase()
         ) : (
             <UserIcon className="w-3.5 h-3.5" />
         )}
         </div>
         <span className="text-xs font-semibold text-gray-800 hidden sm:inline">
-        {user?.first_name && sessionStorage.getItem("has_logged_out") !== "true" ? user.first_name : "Kirish"}
-        </span>
-        </Link>
-        </div>
-        </header>
-        
-        {!isWebApp && (
-            <TelegramLoginModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            onSuccess={() => router.push("/profile")}
-            />
-        )}
-        </>
-    );
-};
+        {isAuthorized && (user?.first_name || user?.firstName)
+            ? user.first_name || user.firstName
+            : "Kirish"}
+            </span>
+            </Link>
+            </div>
+            </header>
+            
+            {!isWebApp && (
+                <TelegramLoginModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                onSuccess={() => router.push("/profile")}
+                />
+            )}
+            </>
+        );
+    };

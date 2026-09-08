@@ -1,51 +1,10 @@
 import crypto from "crypto";
-import { User } from "@/types";
+import { User } from "@/store/useUserStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 
-interface TelegramAuthData {
-    id: number;
-    first_name: string;
-    last_name?: string;
-    username?: string;
-    photo_url?: string;
-    auth_date: number;
-    hash: string;
-}
-
 /**
-* 1. Telegram Widget (Login Widget) orqali kelgan ma'lumotni tekshirish
-*/
-export function verifyTelegramWidgetData(data: TelegramAuthData): boolean {
-    // Xatolik to'g'irlandi: botToken o'rniga BOT_TOKEN ishlatildi
-    if (!BOT_TOKEN) return false;
-    
-    // 1 kundan oshib ketgan eskirgan auth_date'larni rad etish (86400 sekund = 1 kun)
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (currentTime - data.auth_date > 86400) {
-        return false; 
-    }
-    
-    const { hash, ...dataCheck } = data;
-    
-    const dataCheckString = Object.keys(dataCheck)
-    .filter((key) => dataCheck[key as keyof typeof dataCheck] !== undefined && dataCheck[key as keyof typeof dataCheck] !== null)
-    .sort()
-    .map((key) => `${key}=${dataCheck[key as keyof typeof dataCheck]}`)
-    .join("\n");
-    
-    const secretKey = crypto.createHash("sha256").update(BOT_TOKEN).digest();
-    
-    const calculatedHash = crypto
-    .createHmac("sha256", secretKey)
-    .update(dataCheckString)
-    .digest("hex");
-    
-    return calculatedHash === hash;
-}
-
-/**
-* 2. Telegram Web App initData ma'lumotlarini HMAC-SHA256 yordamida tekshirish
+* 1. Telegram Web App initData ma'lumotlarini HMAC-SHA256 yordamida tekshirish
 */
 export function verifyTelegramInitData(initData: string): boolean {
     if (!BOT_TOKEN || !initData) return false;
@@ -80,27 +39,30 @@ export function verifyTelegramInitData(initData: string): boolean {
     }
 }
 
-// Eskirgan nomlar uchun alias (moslikni saqlab qolish maqsadida)
-export const verifyTelegramWebAppData = verifyTelegramInitData;
-
 /**
-* 3. initData string'idan foydalanuvchi ob'ektini ajratib olish va umumiy User turiga moslash
+* 2. initData string'idan foydalanuvchi obyektini ajratib olish
 */
-export function parseTelegramUser(initData: string): User | null {
+export function parseTelegramUser(initData: string): Partial<User> | null {
     try {
         const urlParams = new URLSearchParams(initData);
         const userJson = urlParams.get("user");
         if (!userJson) return null;
         
+        // URLSearchParams avtomatik decode qiladi, to'g'ridan-to'g'ri parse qilamiz
         const parsed = JSON.parse(userJson);
+        
+        const avatar = parsed.photo_url || parsed.avatar_url || "";
         
         return {
             id: parsed.id.toString(),
             telegramId: parsed.id.toString(),
-            first_name: parsed.first_name,
+            first_name: parsed.first_name || "",
             last_name: parsed.last_name || "",
+            firstName: parsed.first_name || "",
+            lastName: parsed.last_name || "",
             username: parsed.username || "",
-            avatar_url: parsed.photo_url || parsed.avatar_url || "",
+            avatar_url: avatar,
+            avatarUrl: avatar,
         };
     } catch (error) {
         console.error("Telegram user parse xatosi:", error);
@@ -109,24 +71,24 @@ export function parseTelegramUser(initData: string): User | null {
 }
 
 /**
-* 4. Admin chatiga yoki foydalanuvchiga Telegram orqali xabar yuborish
+* 3. Telegram Login Widget orqali kelgan ma'lumotni tekshirish
 */
-export async function sendTelegramNotification(chatId: string | number, text: string) {
-    if (!BOT_TOKEN) return;
+export function verifyTelegramWidgetData(data: Record<string, any>): boolean {
+    if (!BOT_TOKEN || !data.hash) return false;
     
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    const { hash, ...dataCheck } = data;
     
-    try {
-        await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text,
-                parse_mode: "HTML",
-            }),
-        });
-    } catch (error) {
-        console.error("Telegram notification error:", error);
-    }
+    const dataCheckString = Object.keys(dataCheck)
+    .filter((key) => dataCheck[key] !== undefined && dataCheck[key] !== null)
+    .sort()
+    .map((key) => `${key}=${dataCheck[key]}`)
+    .join("\n");
+    
+    const secretKey = crypto.createHash("sha256").update(BOT_TOKEN).digest();
+    const calculatedHash = crypto
+    .createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex");
+    
+    return calculatedHash === hash;
 }
