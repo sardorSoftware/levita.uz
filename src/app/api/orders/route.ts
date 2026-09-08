@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendTelegramNotification } from "@/lib/telegram";
+import { sendTelegramNotification } from "@/lib/telegram-auth";
 
 // GET: Foydalanuvchining buyurtmalarini olish
 export async function GET(req: Request) {

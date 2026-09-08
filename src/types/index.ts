@@ -5,6 +5,7 @@ export interface User {
     username?: string;
     phone?: string;
     avatar_url?: string;
+    telegramId?: string;
 }
 
 export interface Category {

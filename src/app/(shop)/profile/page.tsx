@@ -18,8 +18,8 @@ export default function ProfilePage() {
     const [successMessage, setSuccessMessage] = useState("");
     const [isInTelegram, setIsInTelegram] = useState(false);
     
-    // Bot username'ingizni shu yerga yozing (masalan: naqtol_bot)
-    const BOT_USERNAME = "naqtol_bot"; 
+    // Bot username
+    const BOT_USERNAME = "naqtol_bot";
     
     useEffect(() => {
         async function fetchUserData() {
@@ -27,55 +27,33 @@ export default function ProfilePage() {
                 if (typeof window !== "undefined") {
                     const hasLoggedOut = sessionStorage.getItem("has_logged_out");
                     const tg = (window as any).Telegram?.WebApp;
-                    const tgUser = tg?.initDataUnsafe?.user;
+                    const initData = tg?.initData;
                     
-                    // 1. Telegram Mini App tekshiruvi
-                    if (tg && tg.initData && tgUser?.id) {
+                    if (hasLoggedOut === "true") {
+                        setIsFetching(false);
+                        return;
+                    }
+                    
+                    // Xavfsiz POST so'rov orqali foydalanuvchini tekshirish va olish
+                    const res = await fetch("/api/auth/me", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ initData }),
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success && data.user) {
                         setIsInTelegram(true);
-                        if (hasLoggedOut === "true") {
-                            setIsFetching(false);
-                            return;
-                        }
-                        
-                        // Bazadan foydalanuvchini tekshiramiz (telefon raqami bormi?)
-                        const res = await fetch(`/api/auth/me?telegramId=${tgUser.id}`);
-                        const data = await res.json();
-                        
-                        if (data.success && data.user) {
-                            setUser({
-                                id: data.user.id,
-                                telegramId: data.user.telegramId.toString(),
-                                first_name: data.user.firstName || tgUser.first_name,
-                                last_name: data.user.lastName || tgUser.last_name || "",
-                                username: data.user.username || tgUser.username || "",
-                                avatar_url: tgUser.photo_url || "",
-                                phone: data.user.phone || "",
-                            });
-                        } else {
-                            // Agar bazada hali bo'lmasa, vaqtincha Mini App ma'lumotlarini yozamiz
-                            setUser({
-                                id: tgUser.id.toString(),
-                                telegramId: tgUser.id.toString(),
-                                first_name: tgUser.first_name || "Mijoz",
-                                last_name: tgUser.last_name || "",
-                                username: tgUser.username || "",
-                                avatar_url: tgUser.photo_url || "",
-                                phone: "",
-                            });
-                        }
-                    } 
-                    // 2. Agar oddiy Web brauzerda bo'lsa va store'da oldindan user bo'lsa
-                    else if (user?.telegramId && hasLoggedOut !== "true") {
-                        const res = await fetch(`/api/auth/me?telegramId=${user.telegramId}`);
-                        const data = await res.json();
-                        if (data.success && data.user) {
-                            setUser({
-                                ...user,
-                                phone: data.user.phone || "",
-                                first_name: data.user.firstName || user.first_name,
-                                last_name: data.user.lastName || user.last_name,
-                            });
-                        }
+                        setUser({
+                            id: data.user.id,
+                            telegramId: data.user.telegramId.toString(),
+                            first_name: data.user.firstName || "",
+                            last_name: data.user.lastName || "",
+                            username: data.user.username || "",
+                            avatar_url: data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
+                            phone: data.user.phone || "",
+                        });
                     }
                 }
             } catch (err) {
@@ -88,7 +66,7 @@ export default function ProfilePage() {
         fetchUserData();
     }, [setUser]);
     
-    // Store o'zgarganda input inputlarni yangilash
+    // Store o'zgarganda form inputlarini yangilash
     useEffect(() => {
         if (user) {
             setFirstName(user.first_name || "");
@@ -141,13 +119,11 @@ export default function ProfilePage() {
         router.push("/");
     };
     
-    // Web yoki Mini App'dan botga o'tib raqam tasdiqlash uchun yo'naltirish
     const handleLoginRedirect = () => {
         window.location.href = `https://t.me/${BOT_USERNAME}?start=auth`;
     };
     
     const avatarUrl = user?.avatar_url || "";
-    // Tasdiqlangan deb hisoblash uchun telegramId hamda telefon raqam mavjud bo'lishi shart
     const isAuthorized = Boolean(user && user.telegramId && user.phone);
     
     if (isFetching) {
@@ -176,7 +152,6 @@ export default function ProfilePage() {
         )}
         </div>
         
-        {/* Foydalanuvchi karta qismi */}
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0 overflow-hidden">
         {avatarUrl ? (

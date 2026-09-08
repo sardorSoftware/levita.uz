@@ -13,7 +13,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Telegram ID topilmadi" }, { status: 400 });
         }
         
-        // Xavfsizlik uchun Telegram hash tekshiruvi (faqat Login Widget orqali kelganda va hash mavjud bo'lganda)
         if (BOT_TOKEN && hash) {
             const dataCheckArr = Object.keys(body)
             .filter((key) => key !== "hash" && body[key] !== undefined && body[key] !== null)
@@ -25,15 +24,12 @@ export async function POST(req: Request) {
             const hmac = crypto.createHmac("sha256", secretKey).update(dataCheckArr).digest("hex");
             
             if (hmac !== hash) {
-                // Eslatma: Agar bu yerda Mini App initData hash tekshiruvi ishlatilmayotgan bo'lsa, 
-                // Mini App uchun hash tekshiruvi boshqacha yozilishi kerakligini unutmang.
-                console.warn("Hash mismatch, but proceeding or check if it's Mini App");
+                console.warn("Telegram Widget Hash mismatch detected!");
             }
         }
         
         const telegramId = BigInt(id);
         
-        // Bazada bor yoki yo'qligini tekshirib, upsert qilamiz
         const user = await prisma.user.upsert({
             where: { telegramId },
             update: {
@@ -52,13 +48,13 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: true,
             user: {
-                id: user.id,
+                id: user.id.toString(),
                 telegramId: user.telegramId ? user.telegramId.toString() : id.toString(),
-                firstName: user.firstName,
-                lastName: user.lastName,
+                first_name: user.firstName,
+                last_name: user.lastName,
                 username: user.username,
                 phone: user.phone,
-                avatar_url: photo_url || "",
+                avatar_url: photo_url || "", // <-- photo_url to'g'ridan-to'g'ri olindi
             },
         });
     } catch (error) {

@@ -20,8 +20,8 @@ export async function POST(req: Request) {
         const username = message.from.username || null;
         const text = message.text;
         
-        // 1. Agar foydalanuvchi /start ni bossa
-        if (text === "/start" || text === "/start auth") {
+        // 1. Agar foydalanuvchi /start yoki /start auth ni yuborsa (startswith orqali tekshirish xavfsizroq)
+        if (text && text.startsWith("/start")) {
             await sendContactRequest(chatId, firstName);
             return NextResponse.json({ status: "ok" });
         }
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         if (message.contact) {
             const phone = message.contact.phone_number;
             
-            // Supabase bazasiga saqlash yoki yangilash (Upsert)
+            // Bazaga saqlash yoki yangilash (Upsert)
             await prisma.user.upsert({
                 where: { telegramId },
                 update: {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
                 },
             });
             
-            // Foydalanuvchiga muvaffaqiyatli ro'yxatdan o'tganini bildirish va Mini App ochish tugmasini berish
+            // Foydalanuvchiga muvaffaqiyatli ro'yxatdan o'tganini bildirish va klaviaturani olib tashlab, Mini App tugmasini berish
             await sendMessageWithWebApp(chatId, "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\nEndi pastdagi tugma orqali do'konga o'tishingiz mumkin.");
             return NextResponse.json({ status: "ok" });
         }
@@ -62,12 +62,14 @@ export async function POST(req: Request) {
 
 // Telefon raqamni so'rovchi tugmani yuborish funksiyasi
 async function sendContactRequest(chatId: number, name: string) {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    
     await fetch(`${TELEGRAM_API}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             chat_id: chatId,
-            text: `Assalomu alaykum, ${name}!\n\nNAQTOL xizmatidan foydalanish va buyurtmalarni kuzatish uchun iltimos, pastdagi **"Telefon raqamni yuborish"** tugmasini bosing.`,
+            text: `Assalomu alaykum, ${name}!\n\nServisimizdan foydalanish va buyurtmalarni kuzatish uchun iltimos, pastdagi **"📞 Telefon raqamni yuborish"** tugmasini bosing.`,
             reply_markup: {
                 keyboard: [
                     [{ text: "📞 Telefon raqamni yuborish", request_contact: true }]
@@ -79,9 +81,11 @@ async function sendContactRequest(chatId: number, name: string) {
     });
 }
 
-// Mini App ochish tugmasini yuborish funksiyasi
+// Mini App ochish tugmasini yuborish funksiyasi (Kontakt yuborilgandan so'ng klaviaturani tozalaydi)
 async function sendMessageWithWebApp(chatId: number, text: string) {
-    const webAppUrl = process.env.NEXT_PUBLIC_WEB_APP_URL || "https://sizning-domen.uz"; // Vercel yoki sayt manzilingiz
+    if (!TELEGRAM_BOT_TOKEN) return;
+    
+    const webAppUrl = process.env.NEXT_PUBLIC_WEB_APP_URL || "https://sizning-domen.uz";
     
     await fetch(`${TELEGRAM_API}/sendMessage`, {
         method: "POST",

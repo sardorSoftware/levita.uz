@@ -31,11 +31,16 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
                 
                 const data = await res.json();
                 if (data.success) {
+                    // Muvaffaqiyatli kirgach, logout holatini o'chiramiz
+                    if (typeof window !== "undefined") {
+                        sessionStorage.removeItem("has_logged_out");
+                    }
+                    
                     setUser({
                         id: data.user.id,
                         telegramId: data.user.telegramId.toString(),
                         first_name: data.user.firstName,
-                        last_name: "",
+                        last_name: data.user.lastName || "",
                         username: data.user.username || "",
                         avatar_url: telegramUser.photo_url || "",
                         phone: data.user.phone || "",
@@ -67,7 +72,7 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
     if (!isOpen) return null;
     
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
         <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative">
         <button
         onClick={onClose}
