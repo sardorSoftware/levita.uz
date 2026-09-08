@@ -6,26 +6,26 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const telegramIdStr = searchParams.get("telegramId");
-        
+
         if (!telegramIdStr || telegramIdStr === "undefined" || telegramIdStr === "null") {
             return NextResponse.json({ success: false, error: "Telegram ID topilmadi" }, { status: 200 });
         }
-        
+
         let telegramId: bigint;
         try {
             telegramId = BigInt(telegramIdStr);
         } catch {
             return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
         }
-        
+
         const user = await prisma.user.findUnique({
             where: { telegramId },
         });
-        
+
         if (!user) {
             return NextResponse.json({ success: false, error: "Foydalanuvchi topilmadi" }, { status: 200 });
         }
-        
+
         return NextResponse.json({
             success: true,
             user: {
@@ -51,16 +51,16 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { initData, telegramId: bodyTelegramId, first_name, last_name, username, avatar_url } = body;
-        
+
         let telegramUser: any = null;
-        
+
         if (initData) {
             const isValid = verifyTelegramInitData(initData);
             if (isValid) {
                 telegramUser = parseTelegramUser(initData);
             }
         }
-        
+
         if (!telegramUser && bodyTelegramId && bodyTelegramId !== "undefined" && bodyTelegramId !== "null") {
             telegramUser = {
                 id: bodyTelegramId,
@@ -70,18 +70,18 @@ export async function POST(req: Request) {
                 avatar_url: avatar_url || "",
             };
         }
-        
+
         if (!telegramUser || !telegramUser.id) {
             return NextResponse.json({ success: false, error: "Tizimga kirilmagan" }, { status: 200 });
         }
-        
+
         let telegramIdBigInt: bigint;
         try {
             telegramIdBigInt = BigInt(telegramUser.id);
         } catch {
             return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
         }
-        
+
         const user = await prisma.user.upsert({
             where: { telegramId: telegramIdBigInt },
             update: {
@@ -94,14 +94,14 @@ export async function POST(req: Request) {
                 username: telegramUser.username || null,
             },
         });
-        
+
         const finalAvatar = telegramUser.avatar_url || telegramUser.photo_url || avatar_url || "";
-        
+
         return NextResponse.json({
             success: true,
             user: {
                 id: user.id.toString(),
-                telegramId: user.telegramId ? user.telegramId.toString() : telegramUser.id.toString(),
+                telegramId: user.telegramId ? user.telegramId.toString() : telegramIdBigInt.toString(),
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
                 first_name: user.firstName || "",

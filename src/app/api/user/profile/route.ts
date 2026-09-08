@@ -4,9 +4,17 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { telegramId, firstName, lastName, phone, avatar_url, avatarUrl } = body;
+        const { 
+            telegramId, 
+            firstName, 
+            lastName, 
+            first_name, 
+            last_name, 
+            phone, 
+            avatar_url, 
+            avatarUrl 
+        } = body;
         
-        // Validatsiya
         if (!telegramId || telegramId === "undefined" || telegramId === "null") {
             return NextResponse.json(
                 { success: false, error: "Telegram ID topilmadi" },
@@ -24,12 +32,15 @@ export async function POST(req: Request) {
             );
         }
         
-        // Bazada mavjud bo'lsa yangilash, bo'lmasa yaratish (Upsert) yoki to'g'ridan-to'g'ri update
+        // Frontend'dan camelCase yoki snake_case kelishiga moslash
+        const resolvedFirstName = firstName ?? first_name;
+        const resolvedLastName = lastName ?? last_name;
+        
         const updatedUser = await prisma.user.update({
             where: { telegramId: telegramIdBigInt },
             data: {
-                ...(firstName !== undefined && { firstName }),
-                ...(lastName !== undefined && { lastName }),
+                ...(resolvedFirstName !== undefined && { firstName: resolvedFirstName }),
+                ...(resolvedLastName !== undefined && { lastName: resolvedLastName }),
                 ...(phone !== undefined && { phone }),
             },
         });
@@ -39,8 +50,8 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: true,
             user: {
-                id: updatedUser.id,
-                telegramId: updatedUser.telegramId?.toString() || telegramId.toString(),
+                id: updatedUser.id.toString(),
+                telegramId: updatedUser.telegramId ? updatedUser.telegramId.toString() : telegramIdBigInt.toString(),
                 firstName: updatedUser.firstName || "",
                 lastName: updatedUser.lastName || "",
                 first_name: updatedUser.firstName || "",
@@ -54,8 +65,7 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error("PROFILE UPDATE ERROR:", error);
         
-        // Prisma record topilmaganda beradigan xatolik (P2025)
-        if (error.code === "P2025") {
+        if (error?.code === "P2025") {
             return NextResponse.json(
                 { success: false, error: "Foydalanuvchi topilmadi" },
                 { status: 404 }

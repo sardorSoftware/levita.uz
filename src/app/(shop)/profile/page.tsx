@@ -48,12 +48,14 @@ export default function ProfilePage() {
                         return;
                     }
                     
+                    const currentTgId = user?.telegramId || tg?.initDataUnsafe?.user?.id?.toString() || "";
+                    
                     const res = await fetch("/api/auth/me", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             initData: initData || "",
-                            telegramId: user?.telegramId || "",
+                            telegramId: currentTgId,
                         }),
                     });
                     
@@ -100,7 +102,7 @@ export default function ProfilePage() {
                 setIsFetching(false);
             }
         },
-        [setUser, user?.telegramId]
+        [setUser]
     );
     
     useEffect(() => {
@@ -109,14 +111,9 @@ export default function ProfilePage() {
             fetchUserData();
         }
         
-        const handleFocus = () => {
-            fetchUserData();
-        };
-        
+        const handleFocus = () => fetchUserData();
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
-                fetchUserData();
-            }
+            if (document.visibilityState === "visible") fetchUserData();
         };
         
         window.addEventListener("focus", handleFocus);
@@ -188,7 +185,7 @@ export default function ProfilePage() {
     
     const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
     const isAuthorized = Boolean(
-        user && user.telegramId && user.phone && sessionStorage.getItem("has_logged_out") !== "true"
+        user && user.telegramId && user.phone && typeof window !== "undefined" && sessionStorage.getItem("has_logged_out") !== "true"
     );
     
     if (isFetching && !user?.telegramId) {
