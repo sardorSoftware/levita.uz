@@ -22,7 +22,7 @@ export async function GET(req: Request) {
             whereClause.userId = userId;
         } else if (telegramId) {
             const user = await prisma.user.findFirst({
-                where: { telegramId: BigInt(telegramId) }
+                where: { telegramId: Number(telegramId) } // Raqamga o'girildi
             });
             if (user) {
                 whereClause.userId = user.id;
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         if (!resolvedUserId && telegramId) {
             try {
                 const tgUser = await prisma.user.findFirst({
-                    where: { telegramId: BigInt(telegramId) }
+                    where: { telegramId: Number(telegramId) } // Raqamga o'girildi
                 });
                 if (tgUser) {
                     resolvedUserId = tgUser.id;
@@ -104,8 +104,8 @@ export async function POST(req: Request) {
                 const newUser = await prisma.user.create({
                     data: {
                         phone: phone,
-                        telegramId: telegramId ? BigInt(telegramId) : null,
-                        firstName: name || "Mijoz", // <-- To'g'irlandi: first_name o'rniga firstName
+                        telegramId: telegramId ? Number(telegramId) : null, // Raqamga o'girildi
+                        firstName: name || "Mijoz",
                     }
                 });
                 resolvedUserId = newUser.id;
@@ -118,6 +118,7 @@ export async function POST(req: Request) {
             phone,
             address,
             total: safeTotal,
+            name: name || "Mijoz",
             items: {
                 create: items.map((item: { id: string; quantity: number; price: number }) => ({
                     productId: item.id,
@@ -140,7 +141,7 @@ export async function POST(req: Request) {
             },
         });
         
-        const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+        const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.ADMIN_ID;
         if (adminChatId) {
             try {
                 const itemsList = order.items

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { User } from "@/store/useUserStore";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "";
 
 /**
 * 1. Telegram Web App initData ma'lumotlarini HMAC-SHA256 yordamida tekshirish
@@ -48,9 +48,7 @@ export function parseTelegramUser(initData: string): Partial<User> | null {
         const userJson = urlParams.get("user");
         if (!userJson) return null;
         
-        // URLSearchParams avtomatik decode qiladi, to'g'ridan-to'g'ri parse qilamiz
         const parsed = JSON.parse(userJson);
-        
         const avatar = parsed.photo_url || parsed.avatar_url || "";
         
         return {
@@ -91,4 +89,28 @@ export function verifyTelegramWidgetData(data: Record<string, any>): boolean {
     .digest("hex");
     
     return calculatedHash === hash;
+}
+
+/**
+* 4. Adminga Telegram orqali xabar yuborish funksiyasi
+*/
+export async function sendTelegramNotification(chatId: string, message: string): Promise<void> {
+    if (!BOT_TOKEN || !chatId) return;
+    
+    try {
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: message,
+                parse_mode: "HTML",
+            }),
+        });
+    } catch (error) {
+        console.error("Telegram bildirishnoma yuborishda xatolik:", error);
+    }
 }
