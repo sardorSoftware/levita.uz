@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,8 +23,8 @@ export default function AdminLoginPage() {
             const data = await res.json();
             
             if (data.success) {
-                router.push("/admin");
-                router.refresh();
+                // Cookie middleware tomonidan to'liq o'qilishi uchun to'liq qayta yuklash bilan o'tiladi
+                window.location.href = "/admin";
             } else {
                 setError(data.error || "Parol noto'g'ri");
             }
