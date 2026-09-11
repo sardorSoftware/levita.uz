@@ -46,53 +46,48 @@ export default function ProfilePage() {
                         return;
                     }
                     
-                    const currentTgId =
-                    user?.telegramId ||
-                    tg?.initDataUnsafe?.user?.id?.toString() ||
-                    "";
-                    
-                    const res = await fetch("/api/auth/me", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            initData: initData || "",
-                            telegramId: currentTgId,
-                        }),
-                    });
-                    
-                    const data = await res.json();
-                    
-                    if (data.success && data.user) {
-                        sessionStorage.removeItem("has_logged_out");
-                        
-                        setUser({
-                            id: data.user.id,
-                            telegramId: data.user.telegramId?.toString() || "",
-                            first_name: data.user.first_name || data.user.firstName || "",
-                            last_name: data.user.last_name || data.user.lastName || "",
-                            firstName: data.user.firstName || data.user.first_name || "",
-                            lastName: data.user.lastName || data.user.last_name || "",
-                            username: data.user.username || "",
-                            avatar_url:
-                            data.user.avatar_url ||
-                            data.user.avatarUrl ||
-                            tg?.initDataUnsafe?.user?.photo_url ||
-                            "",
-                            avatarUrl:
-                            data.user.avatar_url ||
-                            data.user.avatarUrl ||
-                            tg?.initDataUnsafe?.user?.photo_url ||
-                            "",
-                            phone: data.user.phone || "",
+                    // XAVFSIZLIK: Endi ochiq telegramId yuborilmaydi, faqat initData orqali tekshiriladi
+                    if (initData) {
+                        const res = await fetch("/api/auth/me", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ initData }),
                         });
                         
-                        if (isManualCheck) {
-                            if (data.user.phone) {
-                                setSuccessMessage("Muvaffaqiyatli tasdiqlandi!");
-                            } else {
-                                setSuccessMessage(
-                                    "Raqam hali tasdiqlanmadi. Botga kontakt yuborganingizga ishonch hosil qiling."
-                                );
+                        const data = await res.json();
+                        
+                        if (data.success && data.user) {
+                            sessionStorage.removeItem("has_logged_out");
+                            
+                            setUser({
+                                id: data.user.id,
+                                telegramId: data.user.telegramId?.toString() || "",
+                                first_name: data.user.first_name || data.user.firstName || "",
+                                last_name: data.user.last_name || data.user.lastName || "",
+                                firstName: data.user.firstName || data.user.first_name || "",
+                                lastName: data.user.lastName || data.user.last_name || "",
+                                username: data.user.username || "",
+                                avatar_url:
+                                data.user.avatar_url ||
+                                data.user.avatarUrl ||
+                                tg?.initDataUnsafe?.user?.photo_url ||
+                                "",
+                                avatarUrl:
+                                data.user.avatar_url ||
+                                data.user.avatarUrl ||
+                                tg?.initDataUnsafe?.user?.photo_url ||
+                                "",
+                                phone: data.user.phone || "",
+                            });
+                            
+                            if (isManualCheck) {
+                                if (data.user.phone) {
+                                    setSuccessMessage("Muvaffaqiyatli tasdiqlandi!");
+                                } else {
+                                    setSuccessMessage(
+                                        "Raqam hali tasdiqlanmadi. Botga kontakt yuborganingizga ishonch hosil qiling."
+                                    );
+                                }
                             }
                         }
                     }
@@ -103,7 +98,7 @@ export default function ProfilePage() {
                 setIsFetching(false);
             }
         },
-        [setUser, user?.telegramId]
+        [setUser]
     );
     
     useEffect(() => {
@@ -111,19 +106,8 @@ export default function ProfilePage() {
             isMounted.current = true;
             fetchUserData();
         }
-        
-        const handleFocus = () => fetchUserData();
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") fetchUserData();
-        };
-        
-        window.addEventListener("focus", handleFocus);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        
-        return () => {
-            window.removeEventListener("focus", handleFocus);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-        };
+        // Eslatma: focus va visibilitychange listener'lari olib tashlandi. 
+        // Ular har safar tab almashtirganda API'ga keraksiz so'rov yuborib, yuklamani oshirardi.
     }, [fetchUserData]);
     
     useEffect(() => {
@@ -157,13 +141,14 @@ export default function ProfilePage() {
             if (data.success) {
                 setUser({
                     ...user,
-                    first_name: data.user.firstName || firstName,
-                    firstName: data.user.firstName || firstName,
-                    last_name: data.user.lastName || lastName,
-                    lastName: data.user.lastName || lastName,
-                    phone: data.user.phone || phone,
+                    first_name: data.user?.firstName || firstName,
+                    firstName: data.user?.firstName || firstName,
+                    last_name: data.user?.lastName || lastName,
+                    lastName: data.user?.lastName || lastName,
+                    phone: data.user?.phone || phone,
                 });
                 setSuccessMessage("Shaxsiy ma'lumotlar muvaffaqiyatli yangilandi!");
+                setTimeout(() => setSuccessMessage(""), 3000);
             }
         } catch (err) {
             console.error("Update error:", err);

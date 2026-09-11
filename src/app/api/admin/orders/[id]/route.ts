@@ -6,25 +6,50 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
-        // Next.js versiyalariga moslashish uchun params'ni await qilish
-        const resolvedParams = await Promise.resolve(params);
+        // 1. Next.js 15 va 14 versiyalariga birdek mos keladigan params ishlovchisi
+        const resolvedParams = await params;
         const id = resolvedParams.id;
+        
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: "Buyurtma ID topilmadi" },
+                { status: 400 }
+            );
+        }
         
         const body = await request.json();
         const { status } = body;
         
         if (!status) {
-            return NextResponse.json({ error: "Status ko'rsatilmagan" }, { status: 400 });
+            return NextResponse.json(
+                { success: false, error: "Status ko'rsatilmadi" },
+                { status: 400 }
+            );
         }
         
+        // 2. Prisma orqali statusni bazada yangilash
         const updatedOrder = await prisma.order.update({
-            where: { id },
+            where: { id }, // Agar ID bazada Integer bo'lsa: { id: Number(id) }
             data: { status },
         });
         
-        return NextResponse.json({ success: true, updatedOrder });
-    } catch (error) {
-        console.error("Order status update error:", error);
-        return NextResponse.json({ error: "Server xatoligi" }, { status: 500 });
-    }
+        // 3. BigInt turlarini JSON.stringify uchun String ga o'girish (xatolik bermasligi uchun)
+        const serializedOrder = JSON.parse(
+            JSON.stringify(updatedOrder, (_, value) =>
+                typeof value === "bigint" ? value.toString() : value
+        )
+    );
+    
+    return NextResponse.json({
+        success: true,
+        order: serializedOrder,
+        updatedOrder: serializedOrder,
+    });
+} catch (error) {
+    console.error("Order status update error:", error);
+    return NextResponse.json(
+        { success: false, error: "Serverda statusni yangilashda xatolik bo'ldi" },
+        { status: 500 }
+    );
+}
 }

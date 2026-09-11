@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyTelegramInitData, parseTelegramUser } from "@/lib/telegram-auth";
 
+// GET: Eskicha ko'rinishdagi query so'rovlar uchun
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
@@ -47,32 +48,29 @@ export async function GET(req: Request) {
     }
 }
 
+// POST: Telegram WebApp initData orqali to'liq xavfsiz autentifikatsiya
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { initData, telegramId: bodyTelegramId, first_name, last_name, username, avatar_url } = body;
+        const { initData } = body;
         
-        let telegramUser: any = null;
-        
-        if (initData) {
-            const isValid = verifyTelegramInitData(initData);
-            if (isValid) {
-                telegramUser = parseTelegramUser(initData);
-            }
+        if (!initData) {
+            return NextResponse.json({ success: false, error: "InitData topilmadi" }, { status: 200 });
         }
         
-        if (!telegramUser && bodyTelegramId && bodyTelegramId !== "undefined" && bodyTelegramId !== "null") {
-            telegramUser = {
-                id: bodyTelegramId,
-                first_name: first_name || "Mijoz",
-                last_name: last_name || null,
-                username: username || null,
-                avatar_url: avatar_url || "",
-            };
+        // 1. XAVFSIZLIK: Telegram initData haqiqiyligini serverda tekshirish
+        const isValid = verifyTelegramInitData(initData);
+        if (!isValid) {
+            return NextResponse.json(
+                { success: false, error: "Autentifikatsiyadan o'tmadi (Soxta initData)" },
+                { status: 401 }
+            );
         }
         
+        // 2. Foydalanuvchi ma'lumotlarini shifrlangan datadan ajratib olish
+        const telegramUser = parseTelegramUser(initData);
         if (!telegramUser || !telegramUser.id) {
-            return NextResponse.json({ success: false, error: "Tizimga kirilmagan" }, { status: 200 });
+            return NextResponse.json({ success: false, error: "Telegram foydalanuvchisi topilmadi" }, { status: 200 });
         }
         
         let telegramIdBigInt: bigint;
@@ -82,6 +80,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
         }
         
+        // 3. Bazada mavjudligini tekshirish, yo'q bo'lsa yaratish (Upsert)
         const user = await prisma.user.upsert({
             where: { telegramId: telegramIdBigInt },
             update: {
@@ -97,8 +96,11 @@ export async function POST(req: Request) {
             },
         });
         
-        const finalAvatar = telegramUser.avatar_url || telegramUser.photo_url || avatar_url || "";
+        // TypeScript xatosini oldini olish uchun explicitly `any` qilib olamiz
+        const tUser = telegramUser as any;
+        const finalAvatar = tUser.avatar_url || tUser.photo_url || tUser.photoUrl || "";
         
+        // 4. Frontend uchun barcha formatdagi kalitlarni birdek qaytarish
         return NextResponse.json({
             success: true,
             user: {

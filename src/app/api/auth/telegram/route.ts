@@ -18,8 +18,7 @@ export async function POST(req: Request) {
         
         // 1. Mini App initData orqali tekshirish
         if (body.initData) {
-            const isValidInitData = verifyTelegramInitData(body.initData);
-            if (isValidInitData) {
+            if (verifyTelegramInitData(body.initData)) {
                 const parsed = parseTelegramUser(body.initData) as any;
                 if (parsed && parsed.id) {
                     targetUser = {
@@ -31,16 +30,15 @@ export async function POST(req: Request) {
                         phone: parsed.phone || undefined,
                     };
                 }
+            } else {
+                return NextResponse.json({ success: false, error: "InitData noto'g'ri yoki muddati o'tgan" }, { status: 401 });
             }
-        }
-        
-        // 2. Telegram Widget bo'yicha ma'lumot kelgan bo'lsa
-        if (!targetUser && body.id) {
-            if (body.hash) {
-                const isValidWidget = verifyTelegramWidgetData(body);
-                if (!isValidWidget) {
-                    console.warn("Telegram Widget auth hash mos kelmadi!");
-                }
+        } 
+        // 2. Telegram Widget orqali kelgan ma'lumotlarni tekshirish
+        else if (body.hash && body.id) {
+            const isValidWidget = verifyTelegramWidgetData(body);
+            if (!isValidWidget) {
+                return NextResponse.json({ success: false, error: "Avtorizatsiya ma'lumotlari haqiqiy emas!" }, { status: 401 });
             }
             targetUser = {
                 id: body.id,
@@ -53,24 +51,19 @@ export async function POST(req: Request) {
         }
         
         if (!targetUser || !targetUser.id) {
-            return NextResponse.json(
-                { success: false, error: "Telegram autentifikatsiya ma'lumotlari xato" },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, error: "Telegram autentifikatsiya ma'lumotlari topilmadi" }, { status: 400 });
         }
         
-        let telegramId: bigint;
+        let telegramIdBigInt: bigint;
         try {
-            telegramId = BigInt(targetUser.id);
+            telegramIdBigInt = BigInt(targetUser.id);
         } catch {
-            return NextResponse.json(
-                { success: false, error: "Noto'g'ri Telegram ID formati" },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, error: "Noto'g'ri Telegram ID formati" }, { status: 400 });
         }
         
+        // 3. Bazada mavjudligini tekshirish va yangilash (Upsert)
         const user = await prisma.user.upsert({
-            where: { telegramId },
+            where: { telegramId: telegramIdBigInt },
             update: {
                 firstName: targetUser.first_name || "Mijoz",
                 lastName: targetUser.last_name || null,
@@ -78,7 +71,7 @@ export async function POST(req: Request) {
                 ...(targetUser.phone && { phone: targetUser.phone }),
             },
             create: {
-                telegramId,
+                telegramId: telegramIdBigInt,
                 firstName: targetUser.first_name || "Mijoz",
                 lastName: targetUser.last_name || null,
                 username: targetUser.username || null,
@@ -88,11 +81,13 @@ export async function POST(req: Request) {
         
         const avatar = targetUser.photo_url || "";
         
+        // 4. Frontend uchun barcha formatdagi kalitlarni birdek qaytarish
         return NextResponse.json({
             success: true,
             user: {
                 id: user.id.toString(),
-                telegramId: user.telegramId ? user.telegramId.toString() : telegramId.toString(),
+                // Xatolik to'g'rilandi: agar user.telegramId null bo'lsa, telegramIdBigInt ishlatiladi
+                telegramId: user.telegramId ? user.telegramId.toString() : telegramIdBigInt.toString(),
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
                 first_name: user.firstName || "",

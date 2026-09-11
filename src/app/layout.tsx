@@ -23,7 +23,7 @@ export default function RootLayout({
     return (
         <html lang="uz" suppressHydrationWarning>
         <head>
-        {/* strategy="beforeInteractive" — SDK sahifa va React komponentlari yuklanishidan oldin tayyor bo'lishini ta'minlaydi */}
+        {/* Script yana o'z joyiga — <head> ichiga qaytarildi */}
         <Script
         src="https://telegram.org/js/telegram-web-app.js"
         strategy="beforeInteractive"

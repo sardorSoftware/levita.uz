@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingBag, Grid } from "lucide-react";
@@ -13,15 +14,23 @@ export const BottomBar = ({ onOpenCategories }: BottomBarProps) => {
     const pathname = usePathname();
     const { items, totalPrice } = useCartStore();
     
+    // Hydration xatosining oldini olish uchun komponent brauzerda yuklanganini kuzatamiz
+    const [isMounted, setIsMounted] = useState(false);
+    
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+    
     // Agar buyurtmalar sahifasida bo'lsak, pastdagi savatcha paneli ko'rsatilmasin
     if (pathname === "/orders") {
         return null;
     }
     
-    const totalItemsCount = items.reduce((acc, item) => acc + item.quantity, 0);
+    // Agar hali client'da to'liq yuklanmagan bo'lsa, server bilan bir xil 0 qiymatni olamiz
+    const totalItemsCount = isMounted ? items.reduce((acc, item) => acc + item.quantity, 0) : 0;
     
-    // Agar savatcha bo'sh bo'lsa ham summa 0 chiqishini xavfsiz qilish
-    const safeTotal = typeof totalPrice === "function" ? totalPrice() : 0;
+    const rawTotal = typeof totalPrice === "function" ? totalPrice() : 0;
+    const safeTotal = isMounted ? rawTotal : 0;
     
     return (
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 p-3 max-w-7xl mx-auto">

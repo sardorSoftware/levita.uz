@@ -42,7 +42,6 @@ export function CategoryModal({ category }: CategoryModalProps) {
                 body: JSON.stringify({ name, slug }),
             });
             
-            // Serverdan kelgan javobni xavfsiz o'qish
             const text = await res.text();
             let data;
             try {
@@ -58,7 +57,7 @@ export function CategoryModal({ category }: CategoryModalProps) {
                 setName("");
                 setSlug("");
             }
-            router.refresh();
+            router.refresh(); // Sahifani yangilaydi (Ro'yxatda yangi kategoriya ko'rinishi uchun)
         } catch (error: any) {
             console.error(error);
             alert(error.message || "Amaliyotni bajarishda xatolik!");
@@ -70,14 +69,14 @@ export function CategoryModal({ category }: CategoryModalProps) {
     return (
         <>
         {isEditing ? (
-            <button 
+            <button
             onClick={() => setIsOpen(true)}
             className="p-1.5 text-gray-400 hover:text-primary bg-white hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
             >
             <Edit className="w-4 h-4" />
             </button>
         ) : (
-            <button 
+            <button
             onClick={() => setIsOpen(true)}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
             >
@@ -184,7 +183,7 @@ export function DeleteCategoryButton({ categoryId }: { categoryId: string }) {
     };
     
     return (
-        <button 
+        <button
         onClick={handleDelete}
         disabled={loading}
         className="p-1.5 text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"

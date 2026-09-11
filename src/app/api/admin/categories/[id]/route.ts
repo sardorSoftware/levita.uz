@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// Kategoriyani tahrirlash (PUT)
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -15,14 +16,25 @@ export async function PUT(
         const body = await request.json();
         const { name, slug } = body;
         
+        // Ma'lumotlar to'liqligini tekshirish
+        if (!name || !slug) {
+            return NextResponse.json({ error: "Nomi va slug kiritilishi shart" }, { status: 400 });
+        }
+        
         const updatedCategory = await prisma.category.update({
             where: { id },
             data: { name, slug },
         });
         
-        return NextResponse.json({ success: true, updatedCategory });
+        return NextResponse.json({ success: true, category: updatedCategory }, { status: 200 });
     } catch (error: any) {
         console.error("PUT Error:", error);
+        
+        // Agar yangi kiritilgan slug boshqa kategoriya slugi bilan bir xil bo'lib qolsa (P2002)
+        if (error.code === 'P2002') {
+            return NextResponse.json({ error: "Bu slug (havola) band, boshqasini tanlang" }, { status: 400 });
+        }
+        
         return NextResponse.json(
             { error: "Kategoriyani yangilashda xatolik yuz berdi." },
             { status: 500 }
@@ -30,6 +42,7 @@ export async function PUT(
     }
 }
 
+// Kategoriyani o'chirish (DELETE)
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -49,7 +62,7 @@ export async function DELETE(
         
         if (productsCount > 0) {
             return NextResponse.json(
-                { error: `Ushbu kategoriyada ${productsCount} ta mahsulot bor. Oldin ularni o'chiring.` },
+                { error: `Ushbu kategoriyada ${productsCount} ta mahsulot bor. Oldin ularni o'chiring yoki boshqa kategoriyaga o'tkazing.` },
                 { status: 400 }
             );
         }
@@ -58,11 +71,11 @@ export async function DELETE(
             where: { id },
         });
         
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true }, { status: 200 });
     } catch (error: any) {
         console.error("DELETE Error:", error);
         return NextResponse.json(
-            { error: "Kategoriyani o'chirish imkonsiz. Tizimda xatolik." },
+            { error: "Kategoriyani o'chirish imkonsiz. Tizimda xatolik yuz berdi." },
             { status: 500 }
         );
     }
