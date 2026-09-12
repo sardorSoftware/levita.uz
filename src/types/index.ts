@@ -1,11 +1,13 @@
 export interface User {
-    id: number | string;
-    first_name?: string;
-    last_name?: string;
-    username?: string;
-    phone?: string;
-    avatar_url?: string;
-    telegramId?: string;
+    id: string;
+    telegramId?: number | string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    username?: string | null;
+    phone?: string | null;
+    role?: "USER" | "ADMIN";
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
 }
 
 export interface Category {
@@ -23,11 +25,12 @@ export interface Product {
     oldPrice?: number | null;
     isUsed: boolean;
     inStock: boolean;
-    image: string;
+    images: string[];          // Prisma modelidagi asosiy massiv
+    image?: string | null;     // Eski va bitta rasmli komponentlar uchun ixtiyoriy maydon
     categoryId: string;
     category?: Category;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Date | string;
+    updatedAt: Date | string;
 }
 
 export interface CartItem extends Product {
@@ -37,19 +40,23 @@ export interface CartItem extends Product {
 export interface OrderItem {
     id: string;
     orderId: string;
-    productId: string;
+    productId?: string | null;
     quantity: number;
     price: number;
-    product?: Product;
+    name?: string | null;
+    product?: Product | null;
 }
 
 export interface Order {
     id: string;
-    userId: string;
+    userId?: string | null;
     total: number;
     status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
     address?: string | null;
     phone: string;
-    createdAt: Date;
+    name?: string | null;
+    createdAt: Date | string;
+    updatedAt: Date | string;
     items?: OrderItem[];
+    user?: User | null;
 }

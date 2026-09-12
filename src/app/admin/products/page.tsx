@@ -52,54 +52,59 @@ export default async function AdminProductsPage() {
             </td>
             </tr>
         ) : (
-            products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 flex items-center gap-3">
-                <div className="relative w-10 h-10 bg-cream rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
-                <Image
-                src={product.image || "/assets/logo.jpg"}
-                alt={product.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 40px" // Warningni to'g'irlaydigan qator shu yerda qo'shildi
-                className="object-contain p-1"
-                />
-                </div>
-                <span className="font-semibold text-dark max-w-[200px] truncate">
-                {product.title}
-                </span>
-                </td>
-                <td className="p-4">
-                <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium">
-                {product.category?.name || "Kategoriyasiz"}
-                </span>
-                </td>
-                <td className="p-4 font-bold text-dark">
-                {product.price.toLocaleString()} UZS
-                </td>
-                <td className="p-4">
-                {product.inStock ? (
-                    <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md text-xs font-bold">
-                    Omborda bor
+            products.map((product) => {
+                // Massivdan birinchi rasmni olish (TS xatosini yo'qotadi)
+                const productImage = product.images?.[0] || "/assets/logo.jpg";
+                
+                return (
+                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-4 flex items-center gap-3">
+                    <div className="relative w-10 h-10 bg-cream rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
+                    <Image
+                    src={productImage}
+                    alt={product.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 40px"
+                    className="object-contain p-1"
+                    />
+                    </div>
+                    <span className="font-semibold text-dark max-w-[200px] truncate">
+                    {product.title}
                     </span>
-                ) : (
-                    <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">
-                    Tugagan
+                    </td>
+                    <td className="p-4">
+                    <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium">
+                    {product.category?.name || "Kategoriyasiz"}
                     </span>
-                )}
-                </td>
-                <td className="p-4">
-                <div className="flex items-center justify-end gap-2">
-                <Link 
-                href={`/admin/products/edit/${product.id}`}
-                className="p-1.5 text-gray-400 hover:text-primary bg-white hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                >
-                <Edit className="w-4 h-4" />
-                </Link>
-                <DeleteProductButton productId={product.id} />
-                </div>
-                </td>
-                </tr>
-            ))
+                    </td>
+                    <td className="p-4 font-bold text-dark">
+                    {product.price.toLocaleString("ru-RU")} UZS
+                    </td>
+                    <td className="p-4">
+                    {product.inStock ? (
+                        <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md text-xs font-bold">
+                        Omborda bor
+                        </span>
+                    ) : (
+                        <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">
+                        Tugagan
+                        </span>
+                    )}
+                    </td>
+                    <td className="p-4">
+                    <div className="flex items-center justify-end gap-2">
+                    <Link 
+                    href={`/admin/products/edit/${product.id}`}
+                    className="p-1.5 text-gray-400 hover:text-primary bg-white hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                    >
+                    <Edit className="w-4 h-4" />
+                    </Link>
+                    <DeleteProductButton productId={product.id} />
+                    </div>
+                    </td>
+                    </tr>
+                );
+            })
         )}
         </tbody>
         </table>

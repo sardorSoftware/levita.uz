@@ -5,14 +5,19 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Truck, AlertCircle } from "lucide-react";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
 
+interface ProductDetailsPageProps {
+    params: Promise<{ id: string }> | { id: string };
+}
+
 export default async function ProductDetailsPage({
     params,
-}: {
-    params: { id: string };
-}) {
+}: ProductDetailsPageProps) {
+    // Next.js 15 bilan moslashuvchan params ishlovi
+    const resolvedParams = await params;
+    
     // Bazadan ID orqali mahsulotni qidirish
     const product = await prisma.product.findUnique({
-        where: { id: params.id },
+        where: { id: resolvedParams.id },
         include: { category: true },
     });
     
@@ -20,11 +25,24 @@ export default async function ProductDetailsPage({
         return notFound();
     }
     
+    // Birinchi rasm yoki standart rasmni olish
+    const mainImage = product.images?.[0] || "/assets/logo.jpg";
+    
+    // AddToCartButton va boshqa komponenetlar tipiga moslashtirish
+    const formattedProduct = {
+        ...product,
+        image: mainImage,
+        images: product.images || [],
+    };
+    
     return (
         <div className="max-w-4xl mx-auto px-4 pt-4 pb-24">
         {/* Yuqori navigatsiya */}
         <div className="flex items-center justify-between mb-4">
-        <Link href="/" className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-dark shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+        <Link 
+        href="/" 
+        className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-dark shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
         <ArrowLeft className="w-5 h-5" />
         </Link>
         <span className="text-xs font-semibold text-gray-500 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -41,7 +59,7 @@ export default async function ProductDetailsPage({
             </span>
         )}
         <Image
-        src={product.image || "/assets/logo.jpg"}
+        src={mainImage}
         alt={product.title}
         fill
         className="object-contain p-4"
@@ -58,11 +76,11 @@ export default async function ProductDetailsPage({
         
         <div className="flex items-baseline gap-3 mb-6">
         <span className="text-3xl font-black text-dark">
-        {product.price.toLocaleString()} UZS
+        {product.price.toLocaleString("ru-RU")} UZS
         </span>
         {product.oldPrice && (
             <span className="text-sm text-gray-400 line-through font-medium">
-            {product.oldPrice.toLocaleString()} UZS
+            {product.oldPrice.toLocaleString("ru-RU")} UZS
             </span>
         )}
         </div>
@@ -98,7 +116,7 @@ export default async function ProductDetailsPage({
         {/* Harakatlar (Buyurtma berish) */}
         <div className="pt-4 border-t border-gray-100">
         {product.inStock ? (
-            <AddToCartButton product={product} />
+            <AddToCartButton product={formattedProduct} />
         ) : (
             <div className="w-full bg-gray-100 text-gray-500 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
             <AlertCircle className="w-5 h-5" /> Omborda qolmagan
