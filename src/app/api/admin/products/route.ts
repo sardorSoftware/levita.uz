@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { title, price, oldPrice, categoryId, image, stock, isUsed } = body;
+        // image o'rniga images qabul qilamiz
+        const { title, price, oldPrice, categoryId, images, stock, isUsed } = body;
         
         // Ma'lumotlarni bazaga saqlash
         const product = await prisma.product.create({
@@ -12,11 +13,10 @@ export async function POST(req: Request) {
                 title,
                 price: Number(price),
                 oldPrice: oldPrice ? Number(oldPrice) : null,
-                image, // Drag & drop orqali kelgan Base64 rasm matni
+                images: images || [], // Array ko'rinishidagi Base64 rasmlar
                 inStock: Number(stock) > 0,
                 isUsed: Boolean(isUsed),
                 
-                // Kategoriya ID uchun (agar bazangizda ID raqam bo'lsa Number(categoryId) qilasiz):
                 categoryId: categoryId && categoryId.trim() !== "" ? categoryId : undefined, 
             },
         });

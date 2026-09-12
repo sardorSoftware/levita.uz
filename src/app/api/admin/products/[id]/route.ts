@@ -7,7 +7,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params; // <-- await qo'shildi
+        const { id } = await params;
         const product = await prisma.product.findUnique({
             where: { id },
         });
@@ -29,9 +29,10 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params; // <-- await qo'shildi
+        const { id } = await params;
         const body = await request.json();
-        const { title, price, oldPrice, categoryId, image, stock, isUsed } = body;
+        // image o'rniga images
+        const { title, price, oldPrice, categoryId, images, stock, isUsed } = body;
         
         const updatedProduct = await prisma.product.update({
             where: { id },
@@ -39,7 +40,7 @@ export async function PUT(
                 title,
                 price: Number(price),
                 oldPrice: oldPrice ? Number(oldPrice) : null,
-                image,
+                images: images || [], // Massivni yangilash
                 inStock: Number(stock) > 0,
                 isUsed: Boolean(isUsed),
                 categoryId: categoryId && categoryId.trim() !== "" ? categoryId : undefined,
@@ -62,7 +63,7 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params; // <-- await qo'shildi
+        const { id } = await params;
         await prisma.product.delete({
             where: { id },
         });

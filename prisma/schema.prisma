@@ -20,7 +20,6 @@ model User {
   sessions   AuthSession[]
 
   @@index([phone])
-  @@index([telegramId])
 }
 
 model AuthSession {
@@ -32,7 +31,6 @@ model AuthSession {
   expiresAt  DateTime
   user       User?         @relation(fields: [telegramId], references: [telegramId], onDelete: Cascade)
 
-  @@index([token])
   @@index([telegramId])
 }
 
@@ -52,12 +50,14 @@ model Product {
   oldPrice    Float?
   isUsed      Boolean     @default(false)
   inStock     Boolean     @default(true)
-  image       String
+  images      String[]    @default([])
   categoryId  String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
 }
 
 model Order {
@@ -85,6 +85,9 @@ model OrderItem {
   name      String?
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product? @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 enum Role {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, UploadCloud } from "lucide-react";
+import { ArrowLeft, Save, Loader2, UploadCloud, X, Plus } from "lucide-react";
 import Link from "next/link";
 
 export default function EditProductPage() {
@@ -12,7 +12,6 @@ export default function EditProductPage() {
     
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [imagePreview, setImagePreview] = useState<string>("");
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     
     const [formData, setFormData] = useState({
@@ -20,23 +19,20 @@ export default function EditProductPage() {
         price: "",
         oldPrice: "",
         categoryId: "",
-        image: "",
+        images: [] as string[],
         stock: "10",
         isUsed: false,
     });
     
-    // Kategoriyalar va mahsulot ma'lumotlarini bir vaqtda yoki ketma-ket yuklash
     useEffect(() => {
         const loadData = async () => {
             try {
-                // 1. Kategoriyalarni olish
                 const catRes = await fetch("/api/admin/categories");
                 const catData = await catRes.json();
                 if (catData.success) {
                     setCategories(catData.categories);
                 }
                 
-                // 2. Mahsulot ma'lumotlarini olish
                 const prodRes = await fetch(`/api/admin/products/${productId}`);
                 const prodData = await prodRes.json();
                 
@@ -47,11 +43,10 @@ export default function EditProductPage() {
                         price: p.price?.toString() || "",
                         oldPrice: p.oldPrice?.toString() || "",
                         categoryId: p.categoryId || "",
-                        image: p.image || "",
+                        images: p.images || (p.image ? [p.image] : []), // Eski `image` bo'lsa uni arrayga aylantiramiz
                         stock: p.inStock ? "10" : "0", 
                         isUsed: p.isUsed || false,
                     });
-                    if (p.image) setImagePreview(p.image);
                 } else {
                     alert("Mahsulot topilmadi");
                     router.push("/admin/products");
@@ -67,14 +62,28 @@ export default function EditProductPage() {
         if (productId) loadData();
     }, [productId, router]);
     
-    const handleImageChange = (file: File) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            setImagePreview(result);
-            setFormData((prev) => ({ ...prev, image: result }));
-        };
-        reader.readAsDataURL(file);
+    const handleImageChange = (files: FileList | File[]) => {
+        const fileArray = Array.from(files);
+        if (formData.images.length + fileArray.length > 4) {
+            alert("Maksimal 4 ta rasm yuklash mumkin!");
+            return;
+        }
+        
+        fileArray.forEach((file) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                setFormData((prev) => ({ ...prev, images: [...prev.images, result] }));
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+    
+    const removeImage = (index: number) => {
+        setFormData((prev) => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index),
+        }));
     };
     
     const handleSubmit = async (e: React.FormEvent) => {
@@ -158,7 +167,7 @@ export default function EditProductPage() {
         />
         </div>
         <div>
-        <label className="block text-xs font-bold text-dark uppercase mb-1">Eski narxi (Chegirma uchun)</label>
+        <label className="block text-xs font-bold text-dark uppercase mb-1">Eski narxi</label>
         <input
         type="number"
         value={formData.oldPrice}
@@ -179,9 +188,7 @@ export default function EditProductPage() {
         >
         <option value="">Kategoriyani tanlang</option>
         {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-            {cat.name}
-            </option>
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
         ))}
         </select>
         </div>
@@ -198,36 +205,54 @@ export default function EditProductPage() {
         </div>
         
         <div>
-        <label className="block text-xs font-bold text-dark uppercase mb-1">Mahsulot Rasmi</label>
+        <label className="block text-xs font-bold text-dark uppercase mb-1">
+        Mahsulot Rasmlari (Maks 4 ta)
+        </label>
         <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
             e.preventDefault();
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleImageChange(file);
+            if (e.dataTransfer.files?.length) handleImageChange(e.dataTransfer.files);
         }}
-        className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary transition cursor-pointer bg-gray-50 relative flex flex-col items-center justify-center"
+        className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-primary transition bg-gray-50 relative flex flex-col items-center justify-center min-h-[140px]"
         >
         <input
         type="file"
         accept="image/*"
+        multiple
         onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleImageChange(file);
+            if (e.target.files?.length) handleImageChange(e.target.files);
         }}
-        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
+        disabled={formData.images.length >= 4}
         />
         
-        {imagePreview ? (
-            <div className="relative z-10 flex flex-col items-center">
-            <img src={imagePreview} alt="Preview" className="h-28 object-contain rounded-lg mb-2 border shadow-sm bg-white p-1" />
-            <span className="text-xs text-green-600 font-semibold">Yangi rasm tanlash uchun bosing.</span>
+        {formData.images.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full relative z-30 pointer-events-none">
+            {formData.images.map((img, idx) => (
+                <div key={idx} className="relative group pointer-events-auto">
+                <img src={img} alt={`Preview ${idx}`} className="h-24 w-full object-cover rounded-lg border shadow-sm bg-white p-1" />
+                <button 
+                type="button" 
+                onClick={(e) => { e.preventDefault(); removeImage(idx); }} 
+                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors"
+                >
+                <X className="w-3.5 h-3.5" />
+                </button>
+                </div>
+            ))}
+            {formData.images.length < 4 && (
+                <div className="h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                <Plus className="w-6 h-6 mb-1" />
+                <span className="text-[10px] uppercase font-bold">Yana qo'shish</span>
+                </div>
+            )}
             </div>
         ) : (
             <div className="flex flex-col items-center pointer-events-none">
             <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
             <p className="text-sm text-gray-600">
-            Rasmni shu yerga tashlang yoki <span className="text-primary font-semibold">faylni tanlang</span>
+            Rasmlarni shu yerga tashlang yoki <span className="text-primary font-semibold">fayllarni tanlang</span>
             </p>
             </div>
         )}

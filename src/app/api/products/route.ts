@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Barcha mahsulotlarni olish
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
@@ -19,11 +18,10 @@ export async function GET(req: Request) {
     }
 }
 
-// Yangi mahsulot qo'shish (Admin uchun)
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { title, description, price, oldPrice, isUsed, image, categoryId } = body;
+        const { title, description, price, oldPrice, isUsed, images, categoryId } = body;
         
         const product = await prisma.product.create({
             data: {
@@ -32,7 +30,7 @@ export async function POST(req: Request) {
                 price: parseFloat(price),
                 oldPrice: oldPrice ? parseFloat(oldPrice) : null,
                 isUsed: Boolean(isUsed),
-                image,
+                images: images || [], // images uzatiladi
                 categoryId,
             },
         });
