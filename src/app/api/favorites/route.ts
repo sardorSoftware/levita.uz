@@ -34,25 +34,28 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Ma'lumotlar yetishmayapti" }, { status: 400 });
         }
         
-        // 1. MUHIM: User bazada borligini tekshiramiz, bo'lmasa avtomatik yaratamiz (Guest sifatida)
+        // 1. User bazada borligini tekshiramiz, bo'lmasa faqat ID bilan yaratamiz
         let user = await prisma.user.findUnique({
             where: { id: userId },
         });
         
         if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    id: userId,
-                    name: "Guest User",
-                    email: `${userId}@temp.com`, // Agar schema'da email unique bo'lishi shart bo'lsa
-                },
-            }).catch(() => {
-                // Agar email band bo'lib qolsa yoki boshqa xato bo'lsa ham davom etish uchun
-                return null;
-            });
+            try {
+                user = await prisma.user.create({
+                    data: {
+                        id: userId, // Faqat mavjud bo'lgan ID maydoni beriladi
+                    },
+                });
+            } catch (createError) {
+                // Agar foydalanuvchi bir vaqtning o'zida boshqa joydan yaratilib ulgurgan bo'lsa
+                user = await prisma.user.findUnique({
+                    where: { id: userId },
+                });
+                if (!user) throw createError;
+            }
         }
         
-        // 2. Sevimlilarni tekshirish va o'zgartirish
+        // 2. Sevimlilarni tekshirish va o'zgartirish (Toggle)
         const existing = await prisma.favorite.findUnique({
             where: { userId_productId: { userId, productId } },
         });
