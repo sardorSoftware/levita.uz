@@ -1,79 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, HelpCircle, Share2, Plus, X } from "lucide-react";
 
 export function FloatingMenu() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     
-    // Agar buyurtmalar sahifasida bo'lsak, floating menu ko'rsatilmasin
-    if (pathname === "/orders") {
-        return null;
-    }
+    // Tashqariga bosilganda avtomatik yopilishi
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isOpen]);
+    
+    if (pathname === "/orders") return null;
     
     const toggleMenu = () => setIsOpen(!isOpen);
     
-    // Havolani ulashish funksiyasi
-    const handleShare = () => {
+    const handleShare = async () => {
         if (typeof window !== "undefined" && navigator.share) {
-            navigator.share({
-                title: "Naqt Ol - Online Do'kon",
-                url: window.location.href,
-            }).catch(() => {});
+            try {
+                await navigator.share({
+                    title: "Naqt Ol - Online Do'kon",
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.log("Ulashish bekor qilindi");
+            }
         } else if (typeof window !== "undefined") {
             navigator.clipboard.writeText(window.location.href);
-            alert("Havola vaqtinchalik xotiraga nusxalandi!");
+            alert("Havola nusxalandi!");
         }
         setIsOpen(false);
     };
     
     return (
-        <div className="fixed bottom-20 right-4 z-40 flex flex-col items-end">
-        {/* Ochiladigan yordamchi menyu elementlari */}
-        {isOpen && (
-            <div className="flex flex-col gap-2 mb-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div
+        ref={menuRef}
+        className="fixed bottom-20 right-3 sm:bottom-24 sm:right-5 z-40 flex flex-col items-end"
+        >
+        {/* Ochiladigan menyular */}
+        <div
+        className={`flex flex-col gap-2 mb-2 transition-all duration-200 origin-bottom-right ${
+            isOpen
+            ? "opacity-100 scale-100 translate-y-0 visible"
+            : "opacity-0 scale-90 translate-y-2 invisible pointer-events-none"
+            }`}
+            >
             <a
             href="https://t.me/support_username"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2.5 bg-white text-dark px-4 py-2.5 rounded-full shadow-lg border border-gray-100 text-xs font-semibold hover:bg-cream transition-colors cursor-pointer"
+            className="flex items-center justify-end gap-2.5 bg-white/95 backdrop-blur-md text-[#1a1a1c] px-3.5 py-2 rounded-xl shadow-md border border-gray-100 text-xs font-semibold hover:bg-gray-50 transition-all active:scale-95"
             >
             <span>Operator bilan bog'lanish</span>
-            <MessageCircle className="w-4 h-4 text-primary" />
+            <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+            <MessageCircle className="w-3.5 h-3.5 text-[#FF4D00]" />
+            </div>
             </a>
             
             <a
             href="/faq"
-            className="flex items-center gap-2.5 bg-white text-dark px-4 py-2.5 rounded-full shadow-lg border border-gray-100 text-xs font-semibold hover:bg-cream transition-colors cursor-pointer"
+            className="flex items-center justify-end gap-2.5 bg-white/95 backdrop-blur-md text-[#1a1a1c] px-3.5 py-2 rounded-xl shadow-md border border-gray-100 text-xs font-semibold hover:bg-gray-50 transition-all active:scale-95"
             >
             <span>Ko'p beriladigan savollar</span>
-            <HelpCircle className="w-4 h-4 text-primary" />
+            <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+            <HelpCircle className="w-3.5 h-3.5 text-[#FF4D00]" />
+            </div>
             </a>
             
             <button
             onClick={handleShare}
-            className="flex items-center gap-2.5 bg-white text-dark px-4 py-2.5 rounded-full shadow-lg border border-gray-100 text-xs font-semibold hover:bg-cream transition-colors text-left cursor-pointer"
+            className="flex items-center justify-end gap-2.5 bg-white/95 backdrop-blur-md text-[#1a1a1c] px-3.5 py-2 rounded-xl shadow-md border border-gray-100 text-xs font-semibold hover:bg-gray-50 transition-all active:scale-95 cursor-pointer"
             >
             <span>Do'konni ulashish</span>
-            <Share2 className="w-4 h-4 text-primary" />
+            <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+            <Share2 className="w-3.5 h-3.5 text-[#FF4D00]" />
+            </div>
             </button>
             </div>
-        )}
-        
-        {/* Asosiy Floating Action Button (FAB) */}
-        <button
-        onClick={toggleMenu}
-        className="w-12 h-12 bg-primary hover:bg-primary-hover text-white rounded-full shadow-xl shadow-primary/30 flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer"
-        aria-label="Tezkor menyu"
-        >
-        {isOpen ? (
-            <X className="w-6 h-6 rotate-90 transition-transform duration-300" />
-        ) : (
-            <Plus className="w-6 h-6 rotate-0 transition-transform duration-300" />
-        )}
-        </button>
-        </div>
-    );
-}
+            
+            {/* Asosiy (+) Floating Tugma (Ixchamlashtirilgan) */}
+            <button
+            onClick={toggleMenu}
+            className="w-10 h-10 bg-[#FF4D00] hover:bg-[#e04400] text-white rounded-full shadow-lg shadow-[#FF4D00]/25 flex items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer border border-white"
+            aria-label="Tezkor menyu"
+            >
+            {isOpen ? (
+                <X className="w-5 h-5 transition-transform duration-200" />
+            ) : (
+                <Plus className="w-5 h-5 transition-transform duration-200" />
+            )}
+            </button>
+            </div>
+        );
+    }

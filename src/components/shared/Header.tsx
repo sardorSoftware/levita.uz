@@ -18,9 +18,12 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     const { user, setUser } = useUserStore();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isWebApp, setIsWebApp] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const hasFetched = useRef(false);
     
     useEffect(() => {
+        setIsMounted(true);
+        
         const checkAndFetchUser = async () => {
             if (hasFetched.current) return;
             hasFetched.current = true;
@@ -47,13 +50,14 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                     setUser({
                         id: data.user.id,
                         telegramId: data.user.telegramId?.toString() || "",
-                        first_name: data.user.first_name || data.user.firstName || "",
-                        last_name: data.user.last_name || data.user.lastName || "",
                         firstName: data.user.firstName || data.user.first_name || "",
                         lastName: data.user.lastName || data.user.last_name || "",
                         username: data.user.username || "",
-                        avatar_url: data.user.avatar_url || data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
-                        avatarUrl: data.user.avatar_url || data.user.avatarUrl || tg?.initDataUnsafe?.user?.photo_url || "",
+                        avatarUrl:
+                        data.user.avatarUrl ||
+                        data.user.avatar_url ||
+                        tg?.initDataUnsafe?.user?.photo_url ||
+                        "",
                         phone: data.user.phone || "",
                     });
                 }
@@ -68,21 +72,17 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
                 setIsWebApp(true);
                 tg.ready();
             }
-            
             checkAndFetchUser();
         }
-    }, [setUser]); // Faqat komponent yuklanganda bir marta ishlaydi
+    }, [setUser, user?.telegramId]);
     
-    if (pathname === "/orders") {
-        return null;
-    }
+    if (pathname === "/orders") return null;
     
     const handleProfileClick = (e: React.MouseEvent) => {
         const hasLoggedOut = sessionStorage.getItem("has_logged_out");
         
         if (hasLoggedOut === "true" || !user || !user.telegramId) {
             e.preventDefault();
-            
             if (isWebApp) {
                 sessionStorage.removeItem("has_logged_out");
                 window.location.reload();
@@ -93,60 +93,66 @@ export const Header = ({ onOpenSidebar, onOpenLocation }: HeaderProps) => {
     };
     
     const isAuthorized = Boolean(
-        user?.telegramId && user?.phone && sessionStorage.getItem("has_logged_out") !== "true"
-    );
-    
-    return (
-        <>
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-        <button
-        onClick={onOpenSidebar}
-        className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-800 transition-colors cursor-pointer"
-        aria-label="Menyu"
-        >
-        <Menu className="w-5 h-5" />
-        </button>
+        user?.telegramId &&
+        user?.phone &&
+        (typeof window !== "undefined"
+            ? sessionStorage.getItem("has_logged_out") !== "true"
+            : true)
+        );
         
-        <Link href="/" className="flex items-center select-none group">
-        <span className="text-2xl font-black tracking-tight text-[#1a1a1c]">naqt</span>
-        <span className="text-2xl font-black tracking-tight text-[#FF4D00]">ol</span>
-        </Link>
-        </div>
-        
-        <button
-        onClick={onOpenLocation}
-        className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
-        >
-        <MapPin className="w-4 h-4 text-[#FF4D00]" />
-        <span>Toshkent sh.</span>
-        </button>
-        
-        <Link
-        href="/profile"
-        onClick={handleProfileClick}
-        className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-        >
-        <div className="w-6 h-6 rounded-full bg-[#FF4D00]/10 text-[#FF4D00] flex items-center justify-center font-bold text-xs overflow-hidden">
-        {user?.avatar_url || user?.avatarUrl ? (
-            <img
-            src={user.avatar_url || user.avatarUrl}
-            alt="Avatar"
-            className="w-full h-full object-cover"
-            />
-        ) : user?.first_name || user?.firstName ? (
-            (user.first_name || user.firstName)?.[0]?.toUpperCase()
-        ) : (
-            <UserIcon className="w-3.5 h-3.5" />
-        )}
-        </div>
-        <span className="text-xs font-semibold text-gray-800 hidden sm:inline">
-        {isAuthorized && (user?.first_name || user?.firstName)
-            ? user.first_name || user.firstName
-            : "Kirish"}
+        return (
+            <>
+            <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-gray-200/50 px-4 py-3 transition-all">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+            <button
+            onClick={onOpenSidebar}
+            className="p-2 rounded-xl bg-gray-100/70 hover:bg-gray-100 text-gray-800 transition-colors cursor-pointer active:scale-95"
+            aria-label="Menyu"
+            >
+            <Menu className="w-5 h-5" />
+            </button>
+            
+            <Link href="/" className="flex items-center select-none group">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-[#1a1a1c]">
+            naqt
+            </span>
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-[#FF4D00]">
+            ol
             </span>
             </Link>
+            </div>
+            
+            <div className="flex items-center gap-2">
+            <button
+            onClick={onOpenLocation}
+            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100/70 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-200"
+            >
+            <MapPin className="w-4 h-4 text-[#FF4D00]" />
+            <span>Toshkent sh.</span>
+            </button>
+            
+            <Link
+            href="/profile"
+            onClick={handleProfileClick}
+            className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-gray-100/70 hover:bg-gray-100 transition-colors cursor-pointer border border-gray-100"
+            >
+            <div className="w-7 h-7 rounded-full bg-[#FF4D00]/10 text-[#FF4D00] flex items-center justify-center font-bold overflow-hidden border border-[#FF4D00]/20">
+            {isAuthorized && user?.avatarUrl ? (
+                <img
+                src={user.avatarUrl}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+                />
+            ) : (
+                <UserIcon className="w-4 h-4" />
+            )}
+            </div>
+            <span className="text-xs font-semibold text-gray-800 hidden sm:inline">
+            {isAuthorized ? user?.firstName || "Profil" : "Kirish"}
+            </span>
+            </Link>
+            </div>
             </div>
             </header>
             

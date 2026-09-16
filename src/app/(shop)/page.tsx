@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { PromoBanner } from "@/components/shop/PromoBanner";
+import { HeroSlider } from "@/components/shop/HeroSlider";
 import { SearchBar } from "@/components/shop/SearchBar";
 import { ProductCard } from "@/components/shop/ProductCard";
 import Link from "next/link";
@@ -24,7 +24,7 @@ export default async function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 pt-4 pb-24 space-y-4">
     {/* Banner va Qidiruv */}
-    <PromoBanner />
+    <HeroSlider />
     <SearchBar />
     
     {/* Dinamik Kategoriyalar filtri */}

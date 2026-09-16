@@ -4,7 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-// Prisma va PG Pool ni global obyeqtga biriktirish
+// Prisma va PG Pool ni global obyektga biriktirish
 const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
     pool: Pool | undefined;
