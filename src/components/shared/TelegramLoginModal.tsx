@@ -20,8 +20,8 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
     const [errorMsg, setErrorMsg] = useState("");
     
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
+    const tokenRef = useRef<string | null>(null);
     
-    // Pollingni to'xtatish funksiyasi
     const stopPolling = useCallback(() => {
         if (pollingRef.current) {
             clearInterval(pollingRef.current);
@@ -29,7 +29,6 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
         }
     }, []);
     
-    // Sessiya holatini backend'dan tekshirish
     const checkSessionStatus = useCallback(async (currentToken: string) => {
         try {
             const res = await fetch(`/api/auth/session?token=${currentToken}`);
@@ -71,71 +70,70 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
         return false;
     }, [setUser, onClose, onSuccess, stopPolling]);
     
-    // Telegram Botni ochish va Pollingni boshlash
-    const handleLoginRedirect = async () => {
-        setIsChecking(true);
-        setErrorMsg("");
-        
-        try {
-            let activeToken = token;
-            
-            // Agar hali token yaratilmagan bo'lsa, yangi session token olamiz
-            if (!activeToken) {
-                const res = await fetch("/api/auth/session", { method: "POST" });
-                const data = await res.json();
-                
-                if (!data.success || !data.token) {
-                    throw new Error("Sessiya yaratib bo'lmadi");
+    // Modal ochilganda token olib tayyorlab qo'yish (Pop-up blocker oldini olish uchun)
+    useEffect(() => {
+        if (isOpen && !tokenRef.current) {
+            fetch("/api/auth/session", { method: "POST" })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success && data.token) {
+                    setToken(data.token);
+                    tokenRef.current = data.token;
                 }
-                activeToken = data.token;
-                setToken(activeToken);
-            }
-            
-            // Telegram botni dinamik token (Deep Link) bilan ochish
-            window.open(`https://t.me/${BOT_USERNAME}?start=${activeToken}`, "_blank");
-            
-            // Polling boshlash (Har 2 soniyada avtomatik tekshiradi)
-            stopPolling();
-            pollingRef.current = setInterval(() => {
-                if (activeToken) {
-                    checkSessionStatus(activeToken);
-                }
-            }, 2000);
-            
-        } catch (err) {
-            console.error("Auth start error:", err);
-            setErrorMsg("Tizimga kirishni boshlashda xatolik yuz berdi.");
-        } finally {
-            setIsChecking(false);
+            })
+            .catch(() => setErrorMsg("Sessiya yaratishda xatolik"));
         }
-    };
+        
+        if (!isOpen) {
+            stopPolling();
+            setToken(null);
+            tokenRef.current = null;
+            setErrorMsg("");
+            setIsSuccess(false);
+        }
+    }, [isOpen, stopPolling]);
     
-    // Qo'lda (ruchnoy) tekshirish tugmasi uchun
-    const handleManualCheck = async () => {
+    // Foydalanuvchi Telegram'dan sayt tabiga qaytib kirganda darhol tekshirish
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible" && tokenRef.current && !isSuccess) {
+                checkSessionStatus(tokenRef.current);
+            }
+        };
+        
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [checkSessionStatus, isSuccess]);
+    
+    const handleLoginRedirect = () => {
         if (!token) {
-            setErrorMsg("Avval Telegram botga o'tib kiring.");
+            setErrorMsg("Sessiya yuklanmoqda, ozgina kuting...");
             return;
         }
         
-        setIsChecking(true);
         setErrorMsg("");
         
+        // Asinxron fetch yo'qligi sababli brauzer buni bloklamaydi
+        window.open(`https://t.me/${BOT_USERNAME}?start=${token}`, "_blank");
+        
+        stopPolling();
+        pollingRef.current = setInterval(() => {
+            if (tokenRef.current) {
+                checkSessionStatus(tokenRef.current);
+            }
+        }, 2000);
+    };
+    
+    const handleManualCheck = async () => {
+        if (!token) return;
+        setIsChecking(true);
+        setErrorMsg("");
         const approved = await checkSessionStatus(token);
         if (!approved && !errorMsg) {
             setErrorMsg("Raqam hali tasdiqlanmadi. Botga o'tib kontaktni ulashing.");
         }
         setIsChecking(false);
     };
-    
-    // Modal yopilganda pollingni to'xtatish
-    useEffect(() => {
-        if (!isOpen) {
-            stopPolling();
-            setToken(null);
-            setErrorMsg("");
-            setIsSuccess(false);
-        }
-    }, [isOpen, stopPolling]);
     
     if (!isOpen) return null;
     
@@ -173,11 +171,11 @@ export default function TelegramLoginModal({ isOpen, onClose, onSuccess }: Teleg
             <div className="space-y-2">
             <button
             onClick={handleLoginRedirect}
-            disabled={isChecking}
-            className="w-full py-3.5 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-70"
+            disabled={!token}
+            className="w-full py-3.5 bg-[#229ED9] hover:bg-[#1e88bc] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
             >
             <Send className="w-4 h-4" />
-            <span>{token ? "Botni qayta ochish" : "Telegram orqali kirish / Tasdiqlash"}</span>
+            <span>{token ? "Telegram orqali kirish / Tasdiqlash" : "Yuklanmoqda..."}</span>
             </button>
             
             <button

@@ -3,16 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import {
-    MapPin,
-    ShoppingBag,
-    LogOut,
-    ChevronRight,
-    ShieldCheck,
-    Phone,
-    User as UserIcon,
-    CheckCircle2,
-    Save,
-    Loader2,
+    MapPin, ShoppingBag, LogOut, ChevronRight, ShieldCheck,
+    Phone, User as UserIcon, CheckCircle2, Save, Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,6 +25,12 @@ export default function ProfilePage() {
     
     const fetchUserData = useCallback(
         async (isManualCheck = false) => {
+            // Agar foydalanuvchi allaqachon store'da bor bo'lsa va bu manual tekshiruv bo'lmasa, API chaqirmaymiz
+            if (!isManualCheck && user?.telegramId) {
+                setIsFetching(false);
+                return;
+            }
+            
             if (isManualCheck) setIsFetching(true);
             
             try {
@@ -46,7 +44,6 @@ export default function ProfilePage() {
                         return;
                     }
                     
-                    // XAVFSIZLIK: Endi ochiq telegramId yuborilmaydi, faqat initData orqali tekshiriladi
                     if (initData) {
                         const res = await fetch("/api/auth/me", {
                             method: "POST",
@@ -58,27 +55,7 @@ export default function ProfilePage() {
                         
                         if (data.success && data.user) {
                             sessionStorage.removeItem("has_logged_out");
-                            
-                            setUser({
-                                id: data.user.id,
-                                telegramId: data.user.telegramId?.toString() || "",
-                                first_name: data.user.first_name || data.user.firstName || "",
-                                last_name: data.user.last_name || data.user.lastName || "",
-                                firstName: data.user.firstName || data.user.first_name || "",
-                                lastName: data.user.lastName || data.user.last_name || "",
-                                username: data.user.username || "",
-                                avatar_url:
-                                data.user.avatar_url ||
-                                data.user.avatarUrl ||
-                                tg?.initDataUnsafe?.user?.photo_url ||
-                                "",
-                                avatarUrl:
-                                data.user.avatar_url ||
-                                data.user.avatarUrl ||
-                                tg?.initDataUnsafe?.user?.photo_url ||
-                                "",
-                                phone: data.user.phone || "",
-                            });
+                            setUser(data.user);
                             
                             if (isManualCheck) {
                                 if (data.user.phone) {
@@ -98,7 +75,7 @@ export default function ProfilePage() {
                 setIsFetching(false);
             }
         },
-        [setUser]
+        [setUser, user?.telegramId]
     );
     
     useEffect(() => {
@@ -106,14 +83,12 @@ export default function ProfilePage() {
             isMounted.current = true;
             fetchUserData();
         }
-        // Eslatma: focus va visibilitychange listener'lari olib tashlandi. 
-        // Ular har safar tab almashtirganda API'ga keraksiz so'rov yuborib, yuklamani oshirardi.
     }, [fetchUserData]);
     
     useEffect(() => {
         if (user) {
-            setFirstName(user.first_name || user.firstName || "");
-            setLastName(user.last_name || user.lastName || "");
+            setFirstName(user.firstName || user.first_name || "");
+            setLastName(user.lastName || user.last_name || "");
             setPhone(user.phone || "");
         }
     }, [user]);
@@ -139,12 +114,13 @@ export default function ProfilePage() {
             
             const data = await res.json();
             if (data.success) {
+                // Yangi format va eski formatni ham store ga yozamiz
                 setUser({
                     ...user,
-                    first_name: data.user?.firstName || firstName,
                     firstName: data.user?.firstName || firstName,
-                    last_name: data.user?.lastName || lastName,
+                    first_name: data.user?.firstName || firstName,
                     lastName: data.user?.lastName || lastName,
+                    last_name: data.user?.lastName || lastName,
                     phone: data.user?.phone || phone,
                 });
                 setSuccessMessage("Shaxsiy ma'lumotlar muvaffaqiyatli yangilandi!");
@@ -165,7 +141,7 @@ export default function ProfilePage() {
         router.push("/");
     };
     
-    const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
+    const avatarUrl = user?.avatarUrl || user?.avatar_url || "";
     const isAuthorized = Boolean(
         user &&
         user.telegramId &&
@@ -203,11 +179,7 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex items-center gap-4">
         <div className="w-16 h-16 bg-[#FF4D00]/10 text-[#FF4D00] rounded-full flex items-center justify-center font-bold text-2xl shrink-0 overflow-hidden">
         {avatarUrl ? (
-            <img
-            src={avatarUrl}
-            alt="Avatar"
-            className="w-full h-full object-cover"
-            />
+            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
         ) : firstName ? (
             firstName[0].toUpperCase()
         ) : (
@@ -242,14 +214,10 @@ export default function ProfilePage() {
                     onSubmit={handleUpdate}
                     className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 space-y-4"
                     >
-                    <h2 className="text-sm font-bold text-gray-900">
-                    Ma'lumotlarni yangilash
-                    </h2>
+                    <h2 className="text-sm font-bold text-gray-900">Ma'lumotlarni yangilash</h2>
                     
                     <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                    Ism
-                    </label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Ism</label>
                     <input
                     type="text"
                     value={firstName}
@@ -260,9 +228,7 @@ export default function ProfilePage() {
                     </div>
                     
                     <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                    Familiya
-                    </label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Familiya</label>
                     <input
                     type="text"
                     value={lastName}
@@ -272,9 +238,7 @@ export default function ProfilePage() {
                     </div>
                     
                     <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                    Telefon raqam
-                    </label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Telefon raqam</label>
                     <div className="relative">
                     <Phone className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
                     <input
@@ -294,9 +258,7 @@ export default function ProfilePage() {
                     className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF4D00] hover:bg-[#e04400] text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer disabled:opacity-50"
                     >
                     <Save className="w-4 h-4" />
-                    <span>
-                    {loading ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}
-                    </span>
+                    <span>{loading ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}</span>
                     </button>
                     </form>
                 ) : (
@@ -316,9 +278,7 @@ export default function ProfilePage() {
                 <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-[#FF4D00] transition-colors">
                 <ShoppingBag className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-semibold text-gray-900">
-                Buyurtmalarim
-                </span>
+                <span className="text-sm font-semibold text-gray-900">Buyurtmalarim</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-400">
                 <span>Ko'rish</span>
@@ -334,9 +294,7 @@ export default function ProfilePage() {
                 <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:text-gray-800 transition-colors">
                 <MapPin className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-semibold text-gray-800">
-                Saqlangan manzillar
-                </span>
+                <span className="text-sm font-semibold text-gray-800">Saqlangan manzillar</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-400">
                 <span>Boshqarish</span>

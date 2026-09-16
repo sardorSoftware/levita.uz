@@ -27,11 +27,14 @@ export async function GET(req: Request) {
             return NextResponse.json({ success: false, error: "Foydalanuvchi topilmadi" }, { status: 200 });
         }
         
+        // XAVFSIZLIK: user.telegramId ni tekshiramiz va to'g'ri string ga o'giramiz
+        const safeTelegramId = user.telegramId ? user.telegramId.toString() : telegramIdStr;
+        
         return NextResponse.json({
             success: true,
             user: {
                 id: user.id.toString(),
-                telegramId: user.telegramId ? user.telegramId.toString() : telegramIdStr,
+                telegramId: safeTelegramId, // Tuzatildi
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
                 first_name: user.firstName || "",
@@ -96,7 +99,9 @@ export async function POST(req: Request) {
             },
         });
         
-        // TypeScript xatosini oldini olish uchun explicitly `any` qilib olamiz
+        // TypeScript xatosini oldini olish uchun explicit check qilamiz
+        const safeTelegramId = user.telegramId ? user.telegramId.toString() : telegramIdBigInt.toString();
+        
         const tUser = telegramUser as any;
         const finalAvatar = tUser.avatar_url || tUser.photo_url || tUser.photoUrl || "";
         
@@ -105,7 +110,7 @@ export async function POST(req: Request) {
             success: true,
             user: {
                 id: user.id.toString(),
-                telegramId: user.telegramId ? user.telegramId.toString() : telegramIdBigInt.toString(),
+                telegramId: safeTelegramId, // Tuzatildi
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
                 first_name: user.firstName || "",

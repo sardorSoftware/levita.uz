@@ -2,15 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
-    ArrowLeft, 
-    Package, 
-    Clock, 
-    CheckCircle, 
-    XCircle, 
-    Truck, 
-    RefreshCw 
-} from "lucide-react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, RefreshCw } from "lucide-react";
+import Image from "next/image";
 
 interface OrderItem {
     id: string;
@@ -18,7 +11,7 @@ interface OrderItem {
     price: number;
     product?: {
         title?: string;
-        image?: string;
+        images?: string[];
     };
     name?: string;
 }
@@ -34,7 +27,6 @@ interface Order {
     items: OrderItem[];
 }
 
-// Faol hisoblanadigan statuslar ro'yxati
 const ACTIVE_STATUSES = ["PENDING", "PROCESSING", "SHIPPED"];
 
 export default function OrdersPage() {
@@ -88,7 +80,6 @@ export default function OrdersPage() {
         loadOrders();
     }, []);
     
-    // Status belgilari va ranglarini qaytaruvchi funksiya
     const getStatusBadge = (status: string) => {
         switch (status?.toUpperCase()) {
             case "PENDING":
@@ -131,16 +122,11 @@ export default function OrdersPage() {
         }
     };
     
-    // Aqlli Filtrlash Logikasi
     const filteredOrders = orders.filter((order) => {
         const orderStatus = order.status ? order.status.toUpperCase() : "PENDING";
-        
         if (activeTab === "active") {
-            // Faol tabda Jarayonda, Kutilmoqda va Yo'ldagi barcha buyurtmalar saqlanib turadi
             return ACTIVE_STATUSES.includes(orderStatus);
         }
-        
-        // Barchasi tabida barcha holatdagilar ko'rsatiladi
         return true;
     });
     
@@ -205,10 +191,7 @@ export default function OrdersPage() {
                             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
                             <span className="text-xs font-medium text-gray-500">
                             {order.createdAt ? new Date(order.createdAt).toLocaleDateString("uz-UZ", {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
+                                month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                             }) : "Yaqinda"}
                             </span>
                             {getStatusBadge(order.status)}
@@ -217,15 +200,14 @@ export default function OrdersPage() {
                             <div className="space-y-3 mb-3">
                             {order.items && order.items.map((item, idx) => {
                                 const productName = item.product?.title || item.name || "Mahsulot";
-                                const productImage = item.product?.image;
+                                const productImage = item.product?.images?.[0]; 
+                                
                                 return (
                                     <div key={idx} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-none">
                                     {productImage ? (
-                                        <img 
-                                        src={productImage} 
-                                        alt={productName} 
-                                        className="w-12 h-12 object-cover rounded-xl border border-gray-100 shrink-0" 
-                                        />
+                                        <div className="relative w-12 h-12 rounded-xl border border-gray-100 shrink-0 overflow-hidden">
+                                        <Image src={productImage} alt={productName} fill className="object-cover" sizes="48px" />
+                                        </div>
                                     ) : (
                                         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 shrink-0">
                                         <Package className="w-6 h-6" />
@@ -235,12 +217,12 @@ export default function OrdersPage() {
                                     <div className="flex-1 min-w-0">
                                     <h4 className="text-sm font-medium text-gray-800 truncate">{productName}</h4>
                                     <p className="text-xs text-gray-400">
-                                    {item.quantity} dona × {item.price?.toLocaleString("uz-UZ")} UZS
+                                    {item.quantity} dona × {item.price?.toLocaleString("ru-RU")} UZS
                                     </p>
                                     </div>
                                     
                                     <span className="text-sm font-semibold text-gray-900 shrink-0">
-                                    {((item.price || 0) * (item.quantity || 1)).toLocaleString("uz-UZ")} UZS
+                                    {((item.price || 0) * (item.quantity || 1)).toLocaleString("ru-RU")} UZS
                                     </span>
                                     </div>
                                 );
@@ -250,7 +232,7 @@ export default function OrdersPage() {
                             <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                             <span className="text-xs font-medium text-gray-500">Jami summa:</span>
                             <span className="text-sm font-bold text-gray-900">
-                            {order.total ? order.total.toLocaleString("uz-UZ") : 0} UZS
+                            {order.total ? order.total.toLocaleString("ru-RU") : 0} UZS
                             </span>
                             </div>
                             </div>

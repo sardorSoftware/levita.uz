@@ -1,7 +1,7 @@
 // src/app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
-// Next.js build paytida env qiymatini qotirib qo'ymasligi uchun
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
@@ -9,9 +9,15 @@ export async function POST(request: Request) {
         const body = await request.json().catch(() => ({}));
         const password = body?.password;
         
-        const envPassword = process.env.ADMIN_PASSWORD || "2233";
+        const envPassword = process.env.ADMIN_PASSWORD;
         
-        // Probellarni tozalash va xavfsiz solishtirish
+        if (!envPassword) {
+            return NextResponse.json(
+                { success: false, error: "Serverda admin paroli sozlanmagan!" },
+                { status: 500 }
+            );
+        }
+        
         if (!password || String(password).trim() !== String(envPassword).trim()) {
             return NextResponse.json(
                 { success: false, error: "Parol noto'g'ri!" },
@@ -19,13 +25,19 @@ export async function POST(request: Request) {
             );
         }
         
+        // Oddiy text o'rniga xavfsiz Xash-token yaratamiz
+        const secretKey = process.env.JWT_SECRET || "fallback-secret-key-change-it";
+        const authToken = crypto
+        .createHmac("sha256", secretKey)
+        .update(`admin-session-${envPassword}`)
+        .digest("hex");
+        
         const response = NextResponse.json({ success: true });
         
-        // Cookie o'rnatish
-        response.cookies.set("admin_token", "authenticated", {
+        response.cookies.set("admin_token", authToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax", // Redirect jarayonida cookie yo'qolmasligi uchun
+            sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 7, // 7 kun
         });

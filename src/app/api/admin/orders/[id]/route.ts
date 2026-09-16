@@ -6,13 +6,12 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
-        // 1. Next.js 15 va 14 versiyalariga birdek mos keladigan params ishlovchisi
         const resolvedParams = await params;
-        const id = resolvedParams.id;
+        const rawId = resolvedParams?.id;
         
-        if (!id) {
+        if (!rawId) {
             return NextResponse.json(
-                { success: false, error: "Buyurtma ID topilmadi" },
+                { success: false, error: "Buyurtma ID si kiritilmagan" },
                 { status: 400 }
             );
         }
@@ -27,13 +26,18 @@ export async function PATCH(
             );
         }
         
-        // 2. Prisma orqali statusni bazada yangilash
+        // 1. ID raqam (Int) yoki matn (UUID/CUID) ekanligini avtomashina aniqlash
+        const parsedId = !isNaN(Number(rawId)) ? Number(rawId) : rawId;
+        
         const updatedOrder = await prisma.order.update({
-            where: { id }, // Agar ID bazada Integer bo'lsa: { id: Number(id) }
+            where: { id: parsedId as any },
             data: { status },
+            include: {
+                items: true,
+            },
         });
         
-        // 3. BigInt turlarini JSON.stringify uchun String ga o'girish (xatolik bermasligi uchun)
+        // 2. BigInt xatolarini oldini olish uchun xavfsiz JSON o'girish
         const serializedOrder = JSON.parse(
             JSON.stringify(updatedOrder, (_, value) =>
                 typeof value === "bigint" ? value.toString() : value
@@ -43,12 +47,20 @@ export async function PATCH(
     return NextResponse.json({
         success: true,
         order: serializedOrder,
-        updatedOrder: serializedOrder,
     });
-} catch (error) {
+} catch (error: any) {
     console.error("Order status update error:", error);
+    
+    // 3. Agar ID bazada topilmasa (Prisma P2025 xatoligi)
+    if (error.code === "P2025") {
+        return NextResponse.json(
+            { success: false, error: "Bunday ID dagi buyurtma topilmadi" },
+            { status: 404 }
+        );
+    }
+    
     return NextResponse.json(
-        { success: false, error: "Serverda statusni yangilashda xatolik bo'ldi" },
+        { success: false, error: "Serverda statusni yangilashda xatolik yuz berdi" },
         { status: 500 }
     );
 }

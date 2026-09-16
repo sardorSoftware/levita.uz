@@ -86,7 +86,6 @@ export async function POST(req: Request) {
             success: true,
             user: {
                 id: user.id.toString(),
-                // Xatolik to'g'rilandi: agar user.telegramId null bo'lsa, telegramIdBigInt ishlatiladi
                 telegramId: user.telegramId ? user.telegramId.toString() : telegramIdBigInt.toString(),
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
