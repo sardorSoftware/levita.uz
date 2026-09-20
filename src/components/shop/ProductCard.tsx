@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Heart, Plus } from "lucide-react";
 import { Product } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Product tipini local ravishda kengaytiramiz (images va image uchun)
 type ExtendedProduct = Product & {
@@ -20,14 +20,25 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     const { addItem } = useCartStore();
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
     
-    if (!product) return null;
-    
     // Rasmlar massivini string[] deb aniq tiplashtiramiz
-    const images: string[] = Array.isArray(product.images) && product.images.length > 0
+    const images: string[] = Array.isArray(product?.images) && product.images.length > 0
     ? product.images
-    : product.image
+    : product?.image
     ? [product.image]
     : [];
+    
+    // Avtomatik varoqlash (Time slide) logikasi
+    useEffect(() => {
+        if (images.length <= 1) return; // Rasm 1 ta bo'lsa aylantirmaydi
+        
+        const timer = setInterval(() => {
+            setCurrentImgIndex((prev) => (prev + 1) % images.length);
+        }, 3000); // Har 3 soniyada almashadi
+        
+        return () => clearInterval(timer);
+    }, [images.length]);
+    
+    if (!product) return null;
     
     const { title, price, oldPrice, isUsed } = product;
     
