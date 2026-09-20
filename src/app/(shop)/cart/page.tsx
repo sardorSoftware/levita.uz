@@ -44,7 +44,7 @@ const CartItemCard = ({ item, updateQuantity, removeItem }: any) => {
             {/* Slayder nuqtalari (dots) - faqat 1 tadan ko'p rasm bo'lsa chiqadi */}
             {itemImages.length > 1 && (
                 <div className="absolute bottom-1.5 left-0 right-0 flex justify-center gap-1 z-10">
-                {itemImages.map((_, idx) => (
+                {itemImages.map((_: string, idx: number) => (
                     <div 
                     key={idx} 
                     className={`h-1.5 rounded-full transition-all duration-300 ${
