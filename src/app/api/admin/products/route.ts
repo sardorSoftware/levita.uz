@@ -12,10 +12,9 @@ export async function POST(req: Request) {
                 price: Number(price),
                 oldPrice: oldPrice ? Number(oldPrice) : null,
                 images: images || [], 
-                stock: Number(stock), // Tuzatildi: Mahsulotning aniq soni bazaga yozilmoqda
-                inStock: Number(stock) > 0,
+                inStock: Number(stock) > 0, // Faqat bor yoki yo'qligini yozamiz
                 isUsed: Boolean(isUsed),
-                categoryId: categoryId && categoryId.trim() !== "" ? categoryId : null, // Tuzatildi: undefined o'rniga null
+                categoryId: categoryId && categoryId.trim() !== "" ? categoryId : null,
             },
         });
         
