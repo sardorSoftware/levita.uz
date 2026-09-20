@@ -4,7 +4,9 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const token = request.cookies.get("admin_token")?.value;
-    const isAuthenticated = token === "authenticated";
+    
+    // Token mavjud bo'lsa, foydalanuvchiautentifikatsiyadan o'tgan deb hisoblaymiz
+    const isAuthenticated = Boolean(token && token.length > 5);
     
     const isLoginPage = pathname.startsWith("/admin/login");
     const isLoginApi = pathname.startsWith("/api/admin/login");
