@@ -3,6 +3,7 @@ import { Plus, Edit, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
+export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
     // Bazadan barcha mahsulotlarni kategoriyasi bilan qo'shib olish

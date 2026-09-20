@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// 1. MAHSULOTNI OLISH
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -23,7 +22,6 @@ export async function GET(
     }
 }
 
-// 2. MAHSULOTNI YANGILASH
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -31,7 +29,6 @@ export async function PUT(
     try {
         const { id } = await params;
         const body = await request.json();
-        // image o'rniga images
         const { title, price, oldPrice, categoryId, images, stock, isUsed } = body;
         
         const updatedProduct = await prisma.product.update({
@@ -40,10 +37,11 @@ export async function PUT(
                 title,
                 price: Number(price),
                 oldPrice: oldPrice ? Number(oldPrice) : null,
-                images: images || [], // Massivni yangilash
+                images: images || [], 
+                stock: Number(stock), // Tuzatildi: Mahsulotning aniq soni yangilanmoqda
                 inStock: Number(stock) > 0,
                 isUsed: Boolean(isUsed),
-                categoryId: categoryId && categoryId.trim() !== "" ? categoryId : undefined,
+                categoryId: categoryId && categoryId.trim() !== "" ? categoryId : null, // Tuzatildi: undefined o'rniga null
             },
         });
         
@@ -57,7 +55,6 @@ export async function PUT(
     }
 }
 
-// 3. MAHSULOTNI O'CHIRISH
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
